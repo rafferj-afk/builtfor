@@ -1,3 +1,6 @@
 .DS_Store
 *.zip
 *_pre_update.xlsx
+
+# Local Netlify folder
+.netlify

@@ -299,7 +299,9 @@ body::before {
   flex-direction: column;
   cursor: grab;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.35s ease;
   will-change: transform;
 }
@@ -1290,9 +1292,9 @@ input[type="range"]::-moz-range-thumb {
 
     <div class="scroll-hint" id="scroll-hint">
       <svg class="chevron" viewBox="0 0 32 18">
-        <path d="M4 14 L16 4 L28 14"/>
+        <path d="M4 4 L16 14 L28 4"/>
       </svg>
-      <span class="label">SWIPE UP</span>
+      <span class="label">SWIPE DOWN = BACK</span>
     </div>
 
   </section>
@@ -1910,8 +1912,8 @@ function renderQuestion() {
     });
   });
 
-  // Show the scroll hint on the very first card only
-  if (idx === 0 && !hasSeenScrollHint()) {
+  // Show "swipe down = back" hint on Q2 only (can't go back from Q1)
+  if (idx === 1 && !hasSeenScrollHint()) {
     showScrollHint();
   }
 
@@ -2005,6 +2007,8 @@ function enableScroll(card) {
   function onStart(e) {
     // Don't start a drag on inputs/buttons — they need their own touch behaviour
     if (e.target.closest('button, input, .scale-chip, .multi-option, .compound-option, .archetype-option')) return;
+    // Only start a back-drag when the card is scrolled to the top; otherwise let native scroll handle it
+    if (card.scrollTop > 2) return;
     dragging = true;
     card.classList.add('dragging');
     const p = e.touches ? e.touches[0] : e;
@@ -2016,11 +2020,14 @@ function enableScroll(card) {
     if (!dragging) return;
     const p = e.touches ? e.touches[0] : e;
     currentY = p.clientY - startY;
-    // Reduce movement amplitude (rubber-band feel) — translate at 60% of finger travel
-    const eased = currentY * 0.6;
-    card.style.transform = 'translateY(' + eased + 'px)';
-    // Once the user has scrolled, dismiss the hint
-    if (Math.abs(currentY) > 12) hideScrollHint();
+    // Only apply drag transform for downward movement (go-back gesture)
+    if (currentY > 0) {
+      const eased = currentY * 0.6;
+      card.style.transform = 'translateY(' + eased + 'px)';
+      if (currentY > 12) hideScrollHint();
+    } else {
+      card.style.transform = '';
+    }
   }
 
   function onEnd() {
@@ -2029,9 +2036,8 @@ function enableScroll(card) {
     card.classList.remove('dragging');
     card.style.transform = '';
     const threshold = 60;
-    if (currentY < -threshold) {
-      confirmAnswer();
-    } else if (currentY > threshold) {
+    // Swipe-down = go back; swipe-up no longer navigates (use tapping options or Confirm button)
+    if (currentY > threshold) {
       previousQuestion();
     }
     currentY = 0;
@@ -2044,7 +2050,7 @@ function enableScroll(card) {
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onEnd);
 
-  // Wheel support for desktop
+  // Wheel support for desktop — keep both directions
   card.addEventListener('wheel', function(e) {
     if (Math.abs(e.deltaY) < 30) return;
     if (e.deltaY > 0) confirmAnswer();
@@ -2601,6 +2607,7 @@ function closeDetail() {
 
 function restartQuiz() {
   state.questionIndex = 0;
+  state.answers = {};
   state.results = { builtfor: [], enjoy: [], overall: [] };
   clearProgress();
   // Remove any returning-user block since results are gone
