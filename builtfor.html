@@ -222,54 +222,46 @@ body::before {
 /* ============= WELCOME SCREEN ============= */
 #welcome {
   justify-content: space-between;
-  padding-top: 60px;
+  padding-top: 56px;
+  padding-bottom: 24px;
 }
 
 .welcome-hero {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  position: relative;
+  justify-content: flex-start;
+  padding-top: 12px;
 }
 
-.welcome-hero .display {
-  font-size: clamp(64px, 18vw, 96px);
+.welcome-eyebrow {
+  color: var(--accent) !important;
+  margin-bottom: 12px;
+}
+
+.welcome-display {
+  font-size: clamp(76px, 22vw, 120px) !important;
+  line-height: 0.92 !important;
+  letter-spacing: -0.01em;
+  margin-top: 0;
 }
 
 .welcome-hero .display .accent {
   color: var(--accent);
-  position: relative;
-  display: inline-block;
-}
-
-.welcome-hero .display .accent::after {
-  content: '';
-  position: absolute;
-  bottom: 8px;
-  right: -12px;
-  width: 12px;
-  height: 12px;
-  background: var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 0 30px var(--accent);
 }
 
 .welcome-sub {
-  margin-top: 24px;
-  font-size: 16px;
-  line-height: 1.5;
+  margin-top: 20px;
+  font-size: 15px;
+  line-height: 1.55;
   color: var(--text-dim);
-  max-width: 320px;
+  max-width: 340px;
 }
 
 .welcome-meta {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   justify-content: space-between;
+  margin-top: 20px;
   font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--text-dimmer);
@@ -279,6 +271,22 @@ body::before {
 .welcome-meta span::before {
   content: '─ ';
   color: var(--accent);
+}
+
+.welcome-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 20px;
+}
+
+.welcome-or {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dimmer);
+  letter-spacing: 0.15em;
+  margin: 10px 0;
 }
 
 /* ============= QUESTION CARDS (swipe input) ============= */
@@ -1436,28 +1444,31 @@ input[type="range"]::-moz-range-thumb {
   <section class="screen active" id="welcome">
     <div class="topbar">
       <span class="logo">BUILTFOR</span>
-      <span class="step mono">BETA v0.1</span>
+      <span class="step mono">BETA v0.5</span>
     </div>
 
     <div class="welcome-hero">
-      <p class="eyebrow">THE SPORT-MATCH TEST</p>
-      <h1 class="display brand-mark" style="margin-top: 16px;">
+      <p class="eyebrow welcome-eyebrow">THE SPORT-MATCH TEST</p>
+      <h1 class="display brand-mark welcome-display">
         BUILT<br>
-        <span class="accent">FOR</span><br>
+        <span class="accent">FOR.</span><br>
         SOMETHING.
       </h1>
       <p class="welcome-sub">
-        Your body suits something. We compare your measurements against elite athletes in 100+ sports and tell you what.
+        Your body suits something. We compare your measurements against elite athletes in 150+ sports and tell you what.
       </p>
-
       <div class="welcome-meta">
-        <span>101 SPORTS</span>
-        <span>11 QUESTIONS</span>
-        <span>~2 MIN</span>
+        <span>157 SPORTS</span>
+        <span>15 QUESTIONS</span>
+        <span>~3 MIN</span>
       </div>
     </div>
 
-    <button class="btn" onclick="startQuiz()">START THE TEST</button>
+    <div class="welcome-ctas">
+      <button class="btn ghost" id="view-last-btn" onclick="viewLastDeck()" style="display:none; width:100%; margin-bottom:4px;">VIEW LAST DECK</button>
+      <p class="welcome-or" id="welcome-or" style="display:none;">— OR —</p>
+      <button class="btn" id="start-btn" onclick="startQuiz()" style="width:100%;">START THE TEST</button>
+    </div>
   </section>
 
   <!-- ========== SCREEN 2: QUESTIONS ========== -->
@@ -3437,25 +3448,12 @@ function attemptRestore() {
 }
 
 function addReturningUserBadge() {
-  // Add a small "Welcome back" affordance + a 'View last deck' button on welcome
-  const welcome = document.getElementById('welcome');
-  if (!welcome) return;
-  if (document.getElementById('returning-block')) return;
-
-  const block = document.createElement('div');
-  block.id = 'returning-block';
-  block.style.cssText = 'margin-top: 12px;';
-  block.innerHTML = `
-    <button class="btn ghost" onclick="viewLastDeck()" style="margin-top: 8px;">VIEW LAST DECK</button>
-    <p style="text-align:center;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dimmer);letter-spacing:0.15em;">— OR —</p>
-  `;
-  // Insert ABOVE the START button
-  const startBtn = welcome.querySelector('.btn');
-  if (startBtn && startBtn.parentNode) {
-    startBtn.parentNode.insertBefore(block, startBtn);
-  }
-  // Also change the start button label slightly
-  if (startBtn) startBtn.textContent = 'RUN A NEW TEST';
+  const viewLast = document.getElementById('view-last-btn');
+  const orLabel  = document.getElementById('welcome-or');
+  const startBtn = document.getElementById('start-btn');
+  if (viewLast) viewLast.style.display = '';
+  if (orLabel)  orLabel.style.display  = '';
+  if (startBtn) startBtn.textContent   = 'RUN A NEW TEST';
 }
 
 function viewLastDeck() {
