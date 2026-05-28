@@ -2173,7 +2173,14 @@ function computeBuiltFor(user, sport) {
   // Composite: physical 60% (weighted by category), demand 40%
   const wt = PHYSICAL_WEIGHTS[sport.category] || PHYSICAL_WEIGHTS.default;
   const physicalAvg = wt.h * heightFit + wt.w * weightFit + wt.bf * bfFit + wt.ws * wingspanFit;
-  const score = 60 * physicalAvg + 0.4 * demandFit;
+  const rawScore = 60 * physicalAvg + 0.4 * demandFit;
+
+  // Trainability — age vs sport's developmental window.
+  // Multiplicative so a 60yo with elite-gymnast physique doesn't see
+  // gymnastics as #1; but doesn't change a marathon runner's ranking
+  // (wide window = 1.0).
+  const trainability = computeTrainability(user, sport);
+  const score = rawScore * trainability;
 
   return Math.round(score * 10) / 10;
 }
@@ -2253,6 +2260,65 @@ function computeDemandAnalysis(user, sport) {
 }
 
 /* ============================================================
+   TRAINABILITY — how realistically can a user of this age
+   develop in this sport?
+
+   Driven by the sport's DEMAND PROFILE, not entryAge. The
+   entryAge field encodes elite specialisation age, which is
+   the wrong signal (it would unfairly penalise golf for an
+   adult, even though golf is the prototypical lifetime sport).
+
+   Physiological reality:
+   - Aerobic capacity remains trainable at any age (decline
+     ~10%/decade but training response stays strong)
+   - Fast-twitch fiber loss after ~40 is irreversible —
+     limits power/speed/anaerobic ceiling
+   - Acrobatic motor patterns (gymnastics, diving) lock in
+     early and cannot be acquired late
+
+   Penalty only applies on Built For — Enjoyment already has
+   ageFit handling contact/injury risk separately.
+   ============================================================ */
+function sportEntryMaxAge(sport) {
+  const entryAge = (sport.categorical && sport.categorical.entryAge || '').toString();
+  const m = entryAge.match(/(\d+)\s*[\-–]\s*(\d+)/);
+  if (!m) return null;
+  return parseInt(m[2], 10) || null;
+}
+
+function computeTrainability(user, sport) {
+  if (!user.ageGroup || user.ageGroup === 'under30') return 1.0;
+
+  const d = sport.demands || {};
+  const aerobic       = d.aerobic       || 0;
+  const fastTwitchPeak = Math.max(d.power || 0, d.speed || 0, d.anaerobic || 0);
+  const aerobicDominant = aerobic >= fastTwitchPeak;
+
+  let penalty = 0;
+
+  // Fast-twitch penalty: only when the sport leans power/speed/anaerobic
+  // (so distance running and swimming, which are aerobic-dominant even
+  // with high anaerobic, escape the penalty)
+  if (!aerobicDominant) {
+    if (fastTwitchPeak >= 10)     penalty += 0.30;
+    else if (fastTwitchPeak >= 9) penalty += 0.22;
+    else if (fastTwitchPeak >= 8) penalty += 0.13;
+    else if (fastTwitchPeak >= 7) penalty += 0.06;
+  }
+
+  // Acrobatic / early motor lock — fires only for childhood-specialisation
+  // sports with elite-level coordination demand (gymnastics, diving, etc).
+  // Uses entryAge ≤ 12 AND coordination ≥ 9 to filter — both must be true.
+  const maxEntry = sportEntryMaxAge(sport);
+  if (maxEntry !== null && maxEntry <= 12 && (d.coordination || 0) >= 9) {
+    penalty += 0.20;
+  }
+
+  const ageMul = { '30to45': 0.35, '46to60': 0.75, '61plus': 1.00 }[user.ageGroup] || 0;
+  return Math.max(0.40, 1 - penalty * ageMul);
+}
+
+/* ============================================================
    REASONS — surface why a sport ranks where it does
 
    Returns up to 2 strengths and 1 dealbreaker, drawn from physical
@@ -2315,6 +2381,14 @@ function computeReasons(user, sport, demandAnalysis) {
     .sort((a, b) => (b.dem - b.usr) - (a.dem - a.usr));
   if (critGap[0]) {
     weaknesses.push(DIM_LABELS[critGap[0].key].charAt(0).toUpperCase() + DIM_LABELS[critGap[0].key].slice(1) + ' below elite demand');
+  }
+
+  // Trainability weakness — surface only when the age × window penalty is steep.
+  // Threshold ≤0.80 catches gymnastics/sprinting-style sports for 30+ users,
+  // but leaves marathon/golf alone since those have wide windows.
+  const trainability = computeTrainability(user, sport);
+  if (trainability <= 0.80) {
+    weaknesses.push('Development window narrow for your age');
   }
 
   return {
@@ -2507,10 +2581,17 @@ function runScoring() {
 
   setTimeout(() => {
     // Compute scores + reasons (why this sport ranks where it does)
+    // Overall uses HARMONIC MEAN (2·BF·ENJ / (BF+ENJ)) instead of arithmetic.
+    // The harmonic mean is always ≤ arithmetic and punishes imbalance — so a
+    // sport that's BF 90 / ENJ 40 (harmonic 55) loses to BF 70 / ENJ 70
+    // (harmonic 70). This is the correct definition of "Best Overall": the
+    // sport that's strongest on BOTH axes, not the one that's elite on one.
     const scored = SPORTS_DATA.map(sport => {
       const builtFor = computeBuiltFor(state.answers, sport);
       const enjoyment = computeEnjoyment(state.answers, sport);
-      const total = (enjoyment === 0) ? 0 : Math.round((0.5 * builtFor + 0.5 * enjoyment) * 10) / 10;
+      const total = (builtFor === 0 || enjoyment === 0)
+        ? 0
+        : Math.round(((2 * builtFor * enjoyment) / (builtFor + enjoyment)) * 10) / 10;
       // Skip reasons for excluded sports (sex/water gate)
       const reasons = (builtFor === 0)
         ? { strengths: [], weakness: '' }
