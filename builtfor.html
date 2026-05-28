@@ -1,0 +1,2650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>BUILTFOR — find what you're built for</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BUILTFOR — sport-matcher prototype
+   Aesthetic direction: FIFA Ultimate Team meets Nike Run Club
+   Dark, electric, athletic, slightly aggressive in the best way
+   ============================================================ */
+
+:root {
+  --bg: #0a0a0a;
+  --bg-elev: #141414;
+  --surface: #1c1c1c;
+  --text: #f5f5f5;
+  --text-dim: #8a8a8a;
+  --text-dimmer: #555;
+  --accent: #c8ff3d;            /* electric lime — performance, athletic */
+  --accent-hot: #ffd83d;          /* gold — elite tier */
+  --accent-fire: #ff5e3d;         /* signal red for warnings/exclusion */
+  --border: #262626;
+  --border-bright: #404040;
+
+  /* Card rarity tiers */
+  --tier-bronze: linear-gradient(135deg, #6b4a2a 0%, #a07242 40%, #c8915a 70%, #6b4a2a 100%);
+  --tier-silver: linear-gradient(135deg, #707070 0%, #c0c0c0 40%, #e8e8e8 70%, #707070 100%);
+  --tier-gold:   linear-gradient(135deg, #8a6914 0%, #d4a72c 40%, #ffd83d 70%, #8a6914 100%);
+  --tier-diamond:linear-gradient(135deg, #1d4d6b 0%, #4ca0c8 40%, #c8ff3d 70%, #1d4d6b 100%);
+
+  --shadow-card: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 400;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  /* subtle noise texture for depth */
+  background-image:
+    radial-gradient(ellipse at 50% -10%, rgba(200, 255, 61, 0.06), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(255, 94, 61, 0.04), transparent 50%);
+  background-color: var(--bg);
+}
+
+/* ============= NOISE OVERLAY ============= */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10000;
+  opacity: 0.025;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* ============= APP CONTAINER ============= */
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+@media (min-width: 481px) {
+  #app {
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 80px rgba(0,0,0,0.8);
+  }
+  body { background: #050505; }
+}
+
+/* ============= SCREEN SYSTEM ============= */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  padding: env(safe-area-inset-top, 20px) 20px env(safe-area-inset-bottom, 20px);
+}
+
+.screen.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* ============= TYPOGRAPHY ============= */
+.display {
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+
+/* ============= TOP BAR ============= */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0 16px;
+  flex-shrink: 0;
+}
+
+.topbar .logo {
+  font-family: 'Anton', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.topbar .logo::before {
+  content: '◆';
+  color: var(--accent);
+  margin-right: 6px;
+}
+
+.topbar .step {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+/* progress bar */
+.progress-track {
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* ============= BUTTONS ============= */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 24px;
+  border: none;
+  border-radius: 0;
+  background: var(--accent);
+  color: #000;
+  font-family: 'Anton', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.15s, background 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-bright);
+}
+
+.btn.ghost:active { background: var(--surface); }
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-row .btn { flex: 1; }
+
+/* ============= WELCOME SCREEN ============= */
+#welcome {
+  justify-content: space-between;
+  padding-top: 60px;
+}
+
+.welcome-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.welcome-hero .display {
+  font-size: clamp(64px, 18vw, 96px);
+}
+
+.welcome-hero .display .accent {
+  color: var(--accent);
+  position: relative;
+  display: inline-block;
+}
+
+.welcome-hero .display .accent::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  right: -12px;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 30px var(--accent);
+}
+
+.welcome-sub {
+  margin-top: 24px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  max-width: 320px;
+}
+
+.welcome-meta {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dimmer);
+  letter-spacing: 0.1em;
+}
+
+.welcome-meta span::before {
+  content: '─ ';
+  color: var(--accent);
+}
+
+/* ============= QUESTION CARDS (swipe input) ============= */
+.card-stack {
+  flex: 1;
+  position: relative;
+  margin-top: 8px;
+  perspective: 1200px;
+}
+
+.q-card {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.35s ease;
+  will-change: transform;
+}
+
+.q-card.dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.q-card.gone-left {
+  transform: translateX(-120%) rotate(-25deg) !important;
+  opacity: 0;
+}
+.q-card.gone-right {
+  transform: translateX(120%) rotate(25deg) !important;
+  opacity: 0;
+}
+.q-card.gone-up {
+  transform: translateY(-120%) scale(0.8) !important;
+  opacity: 0;
+}
+
+.q-card .eyebrow { margin-bottom: 14px; }
+
+.q-card .question {
+  font-family: 'Anton', sans-serif;
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 24px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.q-card .help {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: auto;
+}
+
+.q-card .options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.option {
+  padding: 18px 20px;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text);
+  font-family: 'Archivo', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.option:active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  transform: scale(0.98);
+}
+
+.option .arrow {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.15s, transform 0.15s;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.option:hover .arrow { opacity: 1; transform: translateX(0); }
+
+.option.selected {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+/* slider input within q-cards */
+.slider-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.slider-block .value {
+  font-family: 'Anton', sans-serif;
+  font-size: 80px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--accent);
+}
+
+.slider-block .unit {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-align: center;
+  text-transform: uppercase;
+  margin-top: -8px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 32px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--border-bright);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: -13px;
+  box-shadow: 0 0 20px var(--accent);
+  cursor: grab;
+}
+input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; }
+input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--border-bright);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 0 20px var(--accent);
+}
+
+.slider-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dimmer);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+
+/* ============= COMPUTING SCREEN ============= */
+#computing {
+  align-items: center;
+  justify-content: center;
+}
+
+.compute-vis {
+  width: 220px;
+  height: 220px;
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.compute-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-bright);
+  animation: spin 4s linear infinite;
+}
+
+.compute-ring:nth-child(1) { animation-duration: 3s; border-color: var(--accent); border-style: dashed; }
+.compute-ring:nth-child(2) { inset: 20px; animation-duration: 5s; animation-direction: reverse; }
+.compute-ring:nth-child(3) { inset: 40px; animation-duration: 7s; border-color: var(--accent-hot); border-style: dotted; }
+
+.compute-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 12px; height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 30px var(--accent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0); }
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.6; }
+}
+
+.compute-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.compute-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 10px;
+  height: 16px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+/* ============= RESULTS / ATHLETE CARDS ============= */
+#results-intro, #results-deck {
+  padding-top: 0;
+}
+
+.tier-tabs {
+  display: flex;
+  gap: 0;
+  margin: 16px 0 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tier-tab {
+  flex: 1;
+  padding: 14px 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: 'Anton', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tier-tab.active {
+  color: var(--accent);
+}
+.tier-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.tier-tab .count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  margin-left: 4px;
+  color: var(--text-dimmer);
+}
+
+.deck-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 4px 100px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.deck-scroll::-webkit-scrollbar { width: 4px; }
+.deck-scroll::-webkit-scrollbar-thumb { background: var(--border-bright); }
+.deck-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ============= ATHLETE CARD ============= */
+.athlete-card {
+  position: relative;
+  width: 100%;
+  margin-bottom: 12px;
+  border-radius: 18px;
+  padding: 2px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  animation: cardReveal 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.athlete-card:nth-child(2) { animation-delay: 0.08s; }
+.athlete-card:nth-child(3) { animation-delay: 0.16s; }
+.athlete-card:nth-child(4) { animation-delay: 0.24s; }
+.athlete-card:nth-child(5) { animation-delay: 0.32s; }
+
+.athlete-card:active { transform: scale(0.98); }
+
+.athlete-card.tier-bronze   { background: var(--tier-bronze); }
+.athlete-card.tier-silver   { background: var(--tier-silver); }
+.athlete-card.tier-gold     { background: var(--tier-gold); }
+.athlete-card.tier-diamond  { background: var(--tier-diamond); }
+
+.card-inner {
+  background: linear-gradient(160deg, #0f0f0f 0%, #1a1a1a 60%, #0f0f0f 100%);
+  border-radius: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* holographic shine overlay */
+.card-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 70%);
+  pointer-events: none;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.card-rank {
+  font-family: 'Anton', sans-serif;
+  font-size: 48px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.card-tier-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  padding: 4px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.card-tier-badge.tier-bronze   { background: #6b4a2a; color: #ffe8c0; }
+.card-tier-badge.tier-silver   { background: #707070; color: #fff; }
+.card-tier-badge.tier-gold     { background: #8a6914; color: #ffe8a0; }
+.card-tier-badge.tier-diamond  { background: #1d4d6b; color: #c8ff3d; }
+
+.card-score {
+  font-family: 'Anton', sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.card-score-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.card-sport {
+  font-family: 'Anton', sans-serif;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.card-position {
+  font-family: 'Archivo', sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.stat-val {
+  font-family: 'Anton', sans-serif;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.stat-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* ============= CARD DETAIL VIEW ============= */
+#card-detail {
+  padding: 0;
+  z-index: 100;
+}
+
+#card-detail-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: env(safe-area-inset-top, 20px) 20px 40px;
+}
+
+.detail-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 20px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+}
+
+.detail-back::before { content: '←'; color: var(--accent); }
+
+.detail-hero {
+  position: relative;
+  padding: 28px 0;
+  margin-bottom: 24px;
+}
+
+.detail-tier-strip {
+  position: absolute;
+  top: 0;
+  left: -20px;
+  right: -20px;
+  bottom: 0;
+  opacity: 0.15;
+  filter: blur(40px);
+}
+
+.detail-rank-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.detail-rank-row .num { color: var(--accent); font-weight: 700; }
+
+.detail-sport-name {
+  font-family: 'Anton', sans-serif;
+  font-size: 56px;
+  line-height: 0.9;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.detail-position {
+  font-family: 'Archivo', sans-serif;
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+}
+
+.detail-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-score {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-score .val {
+  font-family: 'Anton', sans-serif;
+  font-size: 36px;
+  line-height: 1;
+}
+
+.detail-score .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.detail-score.primary .val { color: var(--accent); }
+
+.detail-section {
+  margin-bottom: 28px;
+}
+
+.detail-section-title {
+  font-family: 'Anton', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.detail-comparison {
+  padding: 20px 22px;
+  background: linear-gradient(135deg, rgba(200, 255, 61, 0.06), transparent);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  font-family: 'Archivo', sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.attr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.attr-row:last-child { border-bottom: none; }
+
+.attr-label { color: var(--text-dim); }
+
+.attr-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.demand-bar-row {
+  margin-bottom: 18px;
+}
+
+.demand-bar-row .lbl {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.demand-bar-row .lbl .name { color: var(--text); font-weight: 500; }
+
+.demand-bar-row .gap-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.demand-bar-row .gap-tag.match { background: rgba(200, 255, 61, 0.15); color: var(--accent); }
+.demand-bar-row .gap-tag.over  { background: rgba(255, 216, 61, 0.15); color: var(--accent-hot); }
+.demand-bar-row .gap-tag.under { background: rgba(255, 94, 61, 0.15);  color: var(--accent-fire); }
+
+.demand-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.demand-bar-paired {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.demand-bar-paired .key {
+  width: 38px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.demand-bar-paired .track {
+  display: block;
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.demand-bar-paired .fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.demand-bar-paired.sport .fill { background: var(--accent); }
+.demand-bar-paired.user .fill { background: var(--accent-hot); }
+
+.demand-bar-paired .val {
+  width: 28px;
+  text-align: right;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.demand-bar-paired.sport .val { color: var(--accent); }
+.demand-bar-paired.user .val { color: var(--accent-hot); }
+
+.notes {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ============= NOTHING-MATCHED FALLBACK ============= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state .display {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 280px;
+  margin-bottom: 32px;
+}
+
+/* ============= BOTTOM ACTION BAR ============= */
+.action-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 20px env(safe-area-inset-bottom, 20px);
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
+  flex-shrink: 0;
+}
+
+
+
+.deck-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0 env(safe-area-inset-bottom, 12px);
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+  flex-shrink: 0;
+  margin-top: -8px;
+  position: relative;
+  z-index: 2;
+}
+
+.deck-action-btn {
+  font-size: 14px;
+  padding: 14px 12px;
+  flex: 1;
+}
+
+/* utility */
+.spacer { flex: 1; }
+.center { text-align: center; }
+
+
+
+/* BUILTFOR wordmark on welcome */
+.brand-mark {
+  letter-spacing: -0.01em;
+}
+.brand-mark .accent {
+  letter-spacing: -0.005em;
+}
+.brand-mark .accent::after {
+  bottom: 14px !important;
+  right: -16px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+
+/* ============= NEW v0.4 QUESTION-TYPE STYLES ============= */
+
+/* Multi-slider stack — body measurements card */
+.multi-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 16px;
+}
+.multi-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.multi-slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.multi-slider-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.multi-slider-value {
+  font-family: 'Anton', sans-serif;
+  font-size: 28px;
+  color: var(--accent);
+  letter-spacing: 0;
+}
+.multi-slider-value em {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+.multi-slider-input {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+.multi-slider-input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--border-bright);
+}
+.multi-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: -11px;
+  box-shadow: 0 0 16px var(--accent);
+}
+.multi-slider-input::-moz-range-track {
+  height: 2px;
+  background: var(--border-bright);
+}
+.multi-slider-input::-moz-range-thumb {
+  width: 24px; height: 24px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 0 16px var(--accent);
+}
+.multi-slider-help {
+  font-family: 'Archivo', sans-serif;
+  font-size: 11px;
+  color: var(--text-dimmer);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* Archetype options — bigger blocks with subtitles */
+.archetype-options { gap: 8px; }
+.archetype-option {
+  padding: 14px 18px;
+  align-items: center;
+  min-height: 60px;
+}
+.archetype-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  text-align: left;
+}
+.archetype-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.archetype-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 400;
+  line-height: 1.3;
+}
+.archetype-option.selected .archetype-sub { color: rgba(0,0,0,0.7); }
+
+/* Multi-select option — has a +/✓ marker */
+.multi-option {
+  padding: 14px 18px;
+}
+.multi-check {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+.multi-option.selected .multi-check {
+  color: #000;
+}
+
+/* Compound choice — multiple sub-questions on one card */
+.compound {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 16px;
+}
+.compound-part { display: flex; flex-direction: column; gap: 8px; }
+.compound-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.compound-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.compound-option {
+  flex: 1 1 auto;
+  padding: 12px 14px;
+  font-size: 13px;
+  min-width: 0;
+  justify-content: center;
+}
+
+/* Help text on questions — slightly tighter */
+.q-card .help {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* The 'sex assigned at birth' question's help paragraph needs to feel like a clarifier */
+.q-card .help em { font-style: italic; opacity: 0.85; }
+
+/* Scroll hint — pulsing chevron over the first card */
+.scroll-hint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 20;
+}
+.scroll-hint.active {
+  opacity: 1;
+  animation: hintPulse 1.6s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.9; }
+  50%      { transform: translateX(-50%) translateY(-8px); opacity: 1; }
+}
+.scroll-hint .chevron {
+  width: 32px;
+  height: 18px;
+  display: block;
+}
+.scroll-hint .chevron path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.scroll-hint .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ========== SCREEN 1: WELCOME ========== -->
+  <section class="screen active" id="welcome">
+    <div class="topbar">
+      <span class="logo">BUILTFOR</span>
+      <span class="step mono">BETA v0.1</span>
+    </div>
+
+    <div class="welcome-hero">
+      <p class="eyebrow">THE SPORT-MATCH TEST</p>
+      <h1 class="display brand-mark" style="margin-top: 16px;">
+        BUILT<br>
+        <span class="accent">FOR</span><br>
+        SOMETHING.
+      </h1>
+      <p class="welcome-sub">
+        Your body suits something. We compare your measurements against elite athletes in 100+ sports and tell you what.
+      </p>
+
+      <div class="welcome-meta">
+        <span>101 SPORTS</span>
+        <span>11 QUESTIONS</span>
+        <span>~2 MIN</span>
+      </div>
+    </div>
+
+    <button class="btn" onclick="startQuiz()">START THE TEST</button>
+  </section>
+
+  <!-- ========== SCREEN 2: QUESTIONS ========== -->
+  <section class="screen" id="quiz">
+    <div class="topbar">
+      <span class="logo">BUILTFOR</span>
+      <span class="step mono" id="step-counter">01 / 16</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="card-stack" id="card-stack">
+      <!-- question cards injected here -->
+    </div>
+
+    <div class="scroll-hint" id="scroll-hint">
+      <svg class="chevron" viewBox="0 0 32 18">
+        <path d="M4 14 L16 4 L28 14"/>
+      </svg>
+      <span class="label">SWIPE UP</span>
+    </div>
+
+  </section>
+
+  <!-- ========== SCREEN 3: COMPUTING ========== -->
+  <section class="screen" id="computing">
+    <div class="compute-vis">
+      <div class="compute-ring"></div>
+      <div class="compute-ring"></div>
+      <div class="compute-ring"></div>
+      <div class="compute-dot"></div>
+    </div>
+    <p class="compute-text">ANALYSING YOUR PROFILE</p>
+    <p class="compute-status mono" id="compute-status">comparing to elite athletes...</p>
+  </section>
+
+  <!-- ========== SCREEN 4: RESULTS DECK ========== -->
+  <section class="screen" id="results">
+    <div class="topbar">
+      <span class="logo">BUILTFOR</span>
+      <span class="step mono" id="results-meta"></span>
+    </div>
+
+    <div class="tier-tabs">
+      <button class="tier-tab active" data-tab="overall">Best Overall <span class="count" id="count-overall"></span></button>
+      <button class="tier-tab" data-tab="builtfor">Built For <span class="count" id="count-builtfor"></span></button>
+      <button class="tier-tab" data-tab="enjoy">You'd Enjoy <span class="count" id="count-enjoy"></span></button>
+    </div>
+
+    <div class="deck-scroll" id="deck-scroll">
+      <!-- athlete cards injected here -->
+    </div>
+
+    <div class="deck-actions">
+      <button class="btn ghost deck-action-btn" onclick="editAnswers()">EDIT ANSWERS</button>
+      <button class="btn deck-action-btn" onclick="restartQuiz()">START OVER</button>
+    </div>
+  </section>
+
+  <!-- ========== SCREEN 5: CARD DETAIL ========== -->
+  <section class="screen" id="card-detail">
+    <div id="card-detail-content">
+      <button class="detail-back" onclick="closeDetail()">Back to deck</button>
+      <div id="detail-body">
+        <!-- detail content injected -->
+      </div>
+    </div>
+  </section>
+
+
+</div>
+
+
+<script>
+/* ============================================================
+   DATA — embedded sport database
+   78 sports from the v1.3 spreadsheet export + per-sport elite comparisons
+   ============================================================ */
+const ELITE_COMPARISONS = {
+  "SP01": "Elite outfield footballers cluster at 180 cm / 76 kg \u2014 lean, durable, and built for 11 km of intermittent sprinting.",
+  "SP01b": "Goalkeepers are the tallest, heaviest players on the pitch \u2014 188 cm and 84 kg is the modern standard, with reach and aerial dominance everything.",
+  "SP02": "The average NBA player is 6'6\" / 198 cm \u2014 and the average wingspan exceeds height by 6 percent. Long levers are the gatekeeper.",
+  "SP02b": "NBA guards run lighter and leaner \u2014 191 cm / 88 kg \u2014 with the agility and shot creation to operate around the league's giants.",
+  "SP03": "Elite marathoners are small, light, and economical \u2014 177 cm / 64 kg, BMI under 21. Long legs relative to torso are the running-economy edge.",
+  "SP03F": "Elite female marathoners run between 158\u2013175 cm and 43\u201359 kg. Paula Radcliffe was 173 cm / 54 kg \u2014 the prototype.",
+  "SP04": "Grand Tour climbers sit around 70 kg with extreme power-to-weight. BMI 21\u201322. Different niches inside the sport \u2014 climbers leaner, sprinters heavier.",
+  "SP05": "The modern elite male swimmer is 184 cm / 78 kg at 8 percent body fat. Long torso, long wingspan, big hands and feet \u2014 Michael Phelps the archetype.",
+  "SP05F": "Elite female swimmers run 173 cm / 63 kg at 15\u201316 percent body fat. Long wingspan and large hands paddle the most water per stroke.",
+  "SP06": "Rugby forwards are the heaviest team-sport athletes outside American football lines \u2014 189 cm / 111 kg at 15 percent BF. Built for the front-row collisions and scrum dominance.",
+  "SP06b": "Rugby backs balance speed and size at 182 cm / 93 kg \u2014 fast enough to break a line, big enough to break a tackle.",
+  "SP07": "Elite female gymnasts cluster tightly at 160 cm / 55 kg with 14 percent body fat. The narrow height range is one of the strictest physical constraints in sport.",
+  "SP08": "Heavyweight rowers are 188 cm / 88 kg with wingspan typically longer than height. Long levers, long torso, and the aerobic engine to use both.",
+  "SP08F": "Elite female heavyweight rowers cluster around 180 cm / 78 kg \u2014 the same long-wingspan / long-torso profile as the men, just scaled down.",
+  "SP09": "ATP players average 187 cm / 82 kg. Height correlates strongly with serve velocity \u2014 anyone under 180 cm is fighting upstream at the top of the game.",
+  "SP10": "Elite inter-county Gaelic footballers run 183 cm / 82 kg at 12 percent BF \u2014 among the most aerobically demanding team sports in the world.",
+  "SP10b": "Half-backs and midfielders are the leanest Gaelic footballers in the team \u2014 183 cm / 81 kg, with the highest Yo-Yo scores of any position.",
+  "SP10c": "Full-forwards carry slightly more mass than the running lines \u2014 184 cm / 84 kg \u2014 with the standing-jump heights to win possession in front of the posts.",
+  "SP11": "The Olympic 100m podium runs 176\u2013179 cm / 77\u201380 kg. Bolt at 196 cm / 93 kg is the genetic outlier \u2014 the rest of the field is more compact than you'd guess.",
+  "SP11F": "Elite female 100m sprinters cluster around 168 cm / 60 kg. Around 70\u201380 percent fast-twitch muscle fibres \u2014 the genetic price of admission.",
+  "SP12": "World Cup lead climbers are 173 cm / 63 kg at 8 percent BF \u2014 the lightest, leanest combat-of-gravity athletes in the database, with an ape index above 1.0.",
+  "SP13": "Heavyweight boxers average 187 cm with a 195 cm reach \u2014 Lennox Lewis was the template. The data says the population optimum sits at 110 kg.",
+  "SP13b": "Featherweight boxers run 170 cm / 57 kg at 7 percent body fat. Speed, reach-to-weight ratio, and recovery between rounds dominate.",
+  "SP13F": "Female Olympic boxers average 168 cm / 60 kg across weight classes \u2014 high bone mineral density despite low body fat is a marker of elite training history.",
+  "SP14": "Elite lightweight-to-welterweight MMA athletes average 177 cm / 75 kg. The body type is a hybrid \u2014 striker's frame, grappler's torso, sprinter's energy system.",
+  "SP15": "Elite male judokas cluster around 176 cm / 80 kg at the middle weights \u2014 but the heavy classes go to 130+ kg. The sport rewards leverage, grip strength, and explosive hip rotation.",
+  "SP15F": "Elite female judokas average 166 cm / 67 kg. Compared to non-athletic peers: lower body fat, larger neck and thoracic girth, longer hands.",
+  "SP16": "BJJ has the flattest physical-constraint profile in combat sport \u2014 technique and grappling-specific endurance matter more than extreme physical attributes. 176 cm / 80 kg is the typical mesomorph.",
+  "SP17": "Freestyle wrestlers run 171 cm / 75 kg at 11 percent BF. Highest strength-to-bodyweight ratio of any combat sport \u2014 relative strength is the whole game.",
+  "SP18": "Elite taekwondo athletes have the lowest BMI of any combat sport \u2014 180 cm / 67 kg at BMI 20.7. Tall, lean, and built for lower-body explosive scoring.",
+  "SP19": "Professional middleweight kickboxers are 177 cm / 72 kg at 8 percent BF with VO2max in the high 60s. A leaner profile than boxing at the same weight.",
+  "SP20": "Elite singles badminton players are taller and leaner than doubles specialists \u2014 181 cm / 73 kg. Court coverage demands long limbs and a high power-to-weight ratio.",
+  "SP20F": "Female singles badminton players cluster at 168 cm / 60 kg \u2014 same long-limbed prototype as the men's game, just scaled.",
+  "SP21": "Squash has the highest aerobic demand of any racquet sport \u2014 closer to distance running than to tennis. Top-class players run 178\u2013182 cm and are exceptionally well-conditioned.",
+  "SP22": "Table tennis has the flattest physical profile in this database \u2014 coordination, reaction, and pattern recognition dominate. Top-5 players cluster mesomorphic-ectomorphic at 177 cm / 72 kg.",
+  "SP23": "Middleweight powerlifters are highly mesomorphic with large girths and bony breadths \u2014 174 cm / 90 kg. Shorter limb-to-torso ratios give a mechanical edge under the bar.",
+  "SP24": "Olympic weightlifters require the highest flexibility of any strength sport \u2014 ankle, hip, and wrist mobility critical. Middleweight class: 170 cm / 81 kg, short levers, exceptional mobility.",
+  "SP25": "Elite strongmen are 187 cm / 153 kg at BMI 43.5 \u2014 among the largest athletes in any sport. Bone mineral density 1.78 g/cm\u00b2 shows the structural remodelling that's required.",
+  "SP26": "Elite XC skiers run 183 cm / 78 kg \u2014 heavier than runners, lighter than rowers. Total-body lean mass critical because both upper and lower body propel.",
+  "SP26F": "Elite female XC skiers cluster at 170 cm / 65 kg \u2014 same balanced upper/lower-body lean-mass profile as the men.",
+  "SP27": "Biathletes hold 83 percent of body mass as lean tissue \u2014 leaner than XC skiers \u2014 with the rifle work raising reaction and fine-motor demand above pure cross-country.",
+  "SP28": "Technical alpine skiers are compact and powerful \u2014 178 cm / 80 kg. Quick edge-to-edge change of direction rewards a lower centre of mass than the speed events.",
+  "SP28b": "Downhill skiers are heavier and more endomorphic than the technical specialists \u2014 184 cm / 88 kg. The extra body mass helps gravity-driven speed.",
+  "SP29": "NHL/KHL forwards run 183 cm / 89 kg. Among the tallest team-sport athletes \u2014 defenseman Zdeno Chara at 206 cm was the upper limit.",
+  "SP29b": "Defensemen are taller and heavier than forwards across every elite league \u2014 186 cm / 92 kg. Reach matters for stick-checks and gap control.",
+  "SP29F": "Female elite ice hockey players cluster at 170 cm / 70 kg. Interesting finding: the taller-heavier prototype doesn't translate to on-ice success as cleanly for women as for men.",
+  "SP30": "Male water polo players are 188 cm / 88 kg \u2014 among the tallest team-sport athletes outside basketball. Long wingspan and treading-water (eggbeater) endurance dominate.",
+  "SP30F": "Female water polo players run 173 cm / 70 kg at 21 percent BF. Same tall-long-armed template as the men's game, scaled to women's elite proportions.",
+  "SP31": "Sprint kayakers are 180 cm / 82 kg with long wingspan. Body mass, BMI, and skeletal muscle mass all predict force output \u2014 sprinters heavier than distance specialists.",
+  "SP32": "Finn-class sailors are heavy-dinghy specialists at 186 cm / 96 kg with endomorphic-mesomorph somatotype. Body mass becomes righting moment \u2014 every kilo matters.",
+  "SP32b": "Laser/ILCA sailors are middleweights at 180 cm / 80 kg. Top performers carry lower trunk and limb fat than sub-elite \u2014 the leaner you are, the longer you can hike out.",
+  "SP33": "Elite male volleyball players are 195 cm / 89 kg \u2014 the tallest field/court sport in this database. Vertical jump and reach height dominate; wingspan around 1.05 of stature.",
+  "SP33F": "Elite female volleyball players average 180 cm / 70 kg \u2014 taller and leaner than basketball or handball counterparts. Lowest body fat among female team-sport athletes.",
+  "SP34": "Handball wings are the lightest players in the side \u2014 178 cm / 81 kg. The 'small player' role: speed, one-on-one finishing, and recovery sprints.",
+  "SP34b": "Handball backcourt players are the tall throwers \u2014 198 cm / 98 kg. Over-the-defence shooting rewards long arms and a high release point.",
+  "SP34c": "Handball pivots are the heaviest non-keeper position \u2014 195 cm / 110 kg. Operate in the contact zone of the 6m line \u2014 frontal collisions every possession.",
+  "SP34F": "Female handball wings are the lightest position in the side \u2014 170 cm / 64 kg, BMI 22. Same speed/recovery role as the men's wing.",
+  "SP34Fb": "Female handball pivots are 180 cm / 80 kg, BMI 24.7 \u2014 the contact specialists at the 6m line.",
+  "SP35": "Elite male field hockey players are shorter and lighter than the average Olympian \u2014 175 cm / 72 kg at 9.4 percent BF. The stooped running posture and stick control reward agility over size.",
+  "SP35F": "Elite female field hockey players cluster at 165 cm / 62 kg. Same shorter-than-average athletic profile as the men's code.",
+  "SP36": "Hurling full-backs are the tallest, heaviest players in the team \u2014 184 cm / 89 kg. Aerial dominance and physical presence in the full-back line.",
+  "SP36b": "Hurling half-backs combine aerial work with high-volume running \u2014 186 cm / 84 kg. The linkage line between defence and attack.",
+  "SP36c": "Hurling midfielders carry the lowest body fat in the team \u2014 180 cm / 80 kg at 11.8 percent BF. Highest GPS running demand on the pitch.",
+  "SP36d": "Hurling half-forwards have the highest counter-movement jump in the team \u2014 182 cm / 80 kg. Pure scoring and explosive speed.",
+  "SP36e": "Hurling full-forwards have the widest height spread of any position \u2014 177 cm / 76 kg with a big SD. The scoring forward can be a compact wrist-shooter or a tall target man.",
+  "SP37": "Senior inter-county camogie players are 169 cm / 68 kg. Positional physical differences are small \u2014 every player runs roughly the same amount in the modern game.",
+  "SP38": "Ladies inter-county Gaelic football players cluster at 167 cm / 65 kg, BMI 23. Profile closely mirrors camogie with slightly lower BMI.",
+  "SP39": "Elite male futsalers are 176 cm / 73 kg at 11 percent BF. Field players have higher VO2max and ventilatory threshold than goalkeepers \u2014 high anaerobic-to-aerobic ratio.",
+  "SP39F": "Elite Brazilian female futsalers average 163 cm / 60 kg with mesomorphic-endomorphic somatotype. Measurable lean-mass gains over the last two decades of the women's pro game.",
+  "SP40": "NFL linemen are 191 cm / 138 kg at BMI 37.8 \u2014 comparable mass to elite strongmen but trained for explosive lateral movement, not just maximal force.",
+  "SP40b": "NFL receivers and defensive backs are among the leanest, most explosive athletes in any team sport \u2014 183 cm / 88 kg at 10 percent BF. The 40-yard dash is the gatekeeper.",
+  "SP40c": "NFL quarterbacks are taller than receivers \u2014 189 cm / 100 kg \u2014 for passing visibility, but markedly leaner than the linemen. Coordination and reaction predict success more than size.",
+  "SP41": "Elite AFL players are 188 cm / 86 kg at 12 percent BF \u2014 among the most aerobically demanding team sports. Ruckmen 200+ cm sit at the upper extreme.",
+  "SP41F": "Elite AFLW players are 171 cm / 65 kg at 19 percent BF. Significant musculoskeletal adaptation visible even across short careers in the women's competition.",
+  "SP42": "Elite netballers are 182 cm / 73 kg \u2014 tall by female team-sport standards, comparable to volleyball but with lower body fat. Vertical jump and 20m sprint discriminate elite from sub-elite.",
+  "SP42b": "Netball goal-shooters and goal-keepers are the tallest position \u2014 188 cm. Height around the goal post is more constraint than skill ceiling at the elite level.",
+  "SP43": "NCAA Division I male lacrosse midfielders are 184 cm / 88 kg at 12 percent BF \u2014 a hybrid of field hockey's running demand and rugby's contact tolerance.",
+  "SP43F": "NCAA female lacrosse players are 167 cm / 65 kg at 22 percent BF. Less contact permitted than the men's game; the profile sits closer to field hockey than to men's lacrosse.",
+  "SP44": "Elite male javelin throwers are 186 cm / 88 kg \u2014 the most ectomorphic of the throwers. Long levers, big shoulders, freakish rotational power.",
+  "SP44F": "Elite female javelin throwers cluster at 176 cm / 75 kg. The same long-armed ectomorph profile as the men, scaled.",
+  "SP45": "Elite discus throwers are 193 cm / 110 kg \u2014 the tallest of the four throwing events. Long arms multiply rotational velocity at the release.",
+  "SP46": "Elite shot putters are 188 cm / 122 kg at 18 percent BF \u2014 the heaviest of the throwers. Highest skinfold thickness and total body mass of any track and field discipline.",
+  "SP47": "Elite male high jumpers are 192 cm / 76 kg \u2014 the highest height-to-weight ratio in athletics. Long, light, springy. The body type Dick Fosbury made famous.",
+  "SP47F": "Female Olympic high jump finalists had a BMI of 18.3 \u2014 the lowest in athletics. 180 cm / 60 kg is the elite template, with extreme lower-body explosiveness.",
+  "SP48": "Elite male long jumpers are 184 cm / 79 kg \u2014 a sprinter's frame with slightly more upper-body mass. Carl Lewis was 188 cm / 80 kg; the prototype.",
+  "SP48F": "Elite female long jumpers run 172 cm / 62 kg. Chest circumference and sex explain over half the variance in elite jump distance.",
+  "SP49": "Elite triple jumpers are 188 cm / 80 kg \u2014 more mesomorphic than high jumpers. Impact forces in the triple jump are among the highest in athletics; you need to be built to absorb them.",
+  "SP50": "Elite male pole vaulters are 186 cm / 79 kg \u2014 sprint speed, upper-body strength, and gymnastic body control fused into one. The most complex skill profile in track and field.",
+  "SP50F": "Elite female pole vaulters cluster at 171 cm / 59 kg with the same sprint-strength-gymnastics hybrid demand. Wide height range tolerated; the skill ceiling is what limits.",
+  "SP51": "Elite Olympic-distance male triathletes are 178 cm / 70 kg at BMI 22 \u2014 sit between distance runners and road cyclists. Lean but with more upper-body mass than pure runners.",
+  "SP51F": "Elite female triathletes run 167 cm / 56 kg at BMI 20. Same swim-bike-run balance as the men's profile.",
+  "SP52": "Pickleball has the broadest body-type tolerance in this database \u2014 coordination, reaction time, and tactical sense matter far more than build. The fastest-growing sport in the US for a reason.",
+  "SP52F": "Pickleball's draw is that almost any body can play it well. Female competitive players span a huge range \u2014 160 to 180 cm, 50 to 80 kg are all represented at the top.",
+  "SP53": "Arm wrestling rewards a counter-intuitive build \u2014 short forearms have the leverage advantage. Forearm girth, grip strength, and rotational power dominate everything else.",
+  "SP53F": "Female competitive arm wrestlers share the men's leverage-first profile \u2014 short forearms, large hand and grip, dense connective tissue. Few peer-reviewed studies exist on the female elite.",
+  "SP54": "Elite curlers cluster at 181 cm / 86 kg but the sport tolerates an enormous body-type range. Precision, balance, sliding-leg flexibility, and the anaerobic burst of intense sweeping matter more than mass.",
+  "SP54F": "Elite female curlers are 168 cm / 70 kg with the same broad body-type tolerance. One of very few sports where being middle-aged is no disadvantage.",
+  "SP55": "Elite male surfers are 177 cm / 73 kg with mesomorphic somatotypes. The differentiator is paddle power \u2014 competitors paddle 4-7 km per session. Upper-body endurance is the gatekeeper.",
+  "SP55F": "Elite female surfers are 165 cm / 60 kg. Same mesomorphic-balanced profile as men's \u2014 paddle-power and balance dominate, lower-body explosiveness for the pop-up.",
+  "SP56": "Elite Ultimate frisbee players are 183 cm / 79 kg. The physiology sits between soccer and field hockey \u2014 endurance plus sprint plus jumping, with no contact. Growing rapidly in Ireland.",
+  "SP56F": "Elite female Ultimate players are 170 cm / 65 kg. Mixed-gender play is a feature of the sport at recreational level \u2014 one of the few team sports where that's actually common."
+};
+</script>
+<script>
+const SPORTS_DATA = [{"id": "SP01", "sport": "Soccer (football)", "position": "Outfield (all)", "category": "Team field", "physical": {"heightMean": 180, "heightSD": 6, "weightMean": 76, "weightSD": 7, "bmiMean": 23.4, "bfMean": 11, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 7, "maxStrength": 5, "power": 7, "speed": 8, "endurance": 8, "flexibility": 5, "coordination": 8, "reaction": 7}, "categorical": {"teamSize": 11, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u20138", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S01, S02", "notes": "Goalkeepers significantly taller/heavier than outfield; midfielders leanest. Profile here is the outfield mean across La Liga and broader European elite samples.", "sex": "M"}, {"id": "SP01b", "sport": "Soccer (football)", "position": "Goalkeeper", "category": "Team field", "physical": {"heightMean": 188, "heightSD": 4, "weightMean": 84, "weightSD": 6, "bmiMean": 23.8, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 6, "maxStrength": 6, "power": 8, "speed": 6, "endurance": 5, "flexibility": 6, "coordination": 8, "reaction": 9}, "categorical": {"teamSize": 11, "contact": "Low", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S02", "notes": "Goalkeepers 80.2 \u00b1 3.2 kg in Spanish La Liga sample (S02); reaction time and aerial presence dominate vs outfield demands.", "sex": "M"}, {"id": "SP02", "sport": "Basketball", "position": "All positions (NBA mean)", "category": "Team court", "physical": {"heightMean": 198.6, "heightSD": 9, "weightMean": 100, "weightSD": 12, "bmiMean": 25.3, "bfMean": 11, "wingspanRatio": 1.063, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 8, "maxStrength": 6, "power": 9, "speed": 8, "endurance": 7, "flexibility": 5, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 5, "contact": "Low", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S04, S05, S06", "notes": "NBA league-wide mean height stable at ~6'6\" / 198.6 cm since 1987. Wingspan typically 2\u20136 inches greater than height; mean wingspan/height ratio 1.063.", "sex": "M"}, {"id": "SP02b", "sport": "Basketball", "position": "Guards (PG/SG)", "category": "Team court", "physical": {"heightMean": 191, "heightSD": 5, "weightMean": 88, "weightSD": 8, "bmiMean": 24.1, "bfMean": 9, "wingspanRatio": 1.06, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 9, "maxStrength": 5, "power": 9, "speed": 9, "endurance": 7, "flexibility": 5, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 5, "contact": "Low", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S03, S04", "notes": "Guards lighter, leaner, more agile; perimeter shooting and ball-handling dominant.", "sex": "M"}, {"id": "SP03", "sport": "Distance running", "position": "Long-distance (marathon)", "category": "Endurance individual", "physical": {"heightMean": 177, "heightSD": 5, "weightMean": 64, "weightSD": 5, "bmiMean": 20.5, "bfMean": 7, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 3, "maxStrength": 2, "power": 3, "speed": 4, "endurance": 10, "flexibility": 5, "coordination": 4, "reaction": 3}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S07, S08, S09", "notes": "Elite male marathoners span 168\u2013188 cm / 57\u201375 kg, BMI 19\u201323 (S08). VO2max ~70\u201380 ml/kg/min in elite (S09). Longer legs relative to trunk improve running economy.", "sex": "M"}, {"id": "SP04", "sport": "Road cycling", "position": "Grand Tour all-rounder", "category": "Endurance individual", "physical": {"heightMean": 180, "heightSD": 5, "weightMean": 70, "weightSD": 5, "bmiMean": 21.4, "bfMean": 8, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 6, "maxStrength": 5, "power": 7, "speed": 6, "endurance": 10, "flexibility": 4, "coordination": 6, "reaction": 5}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 9, "clubsPrevalent": "Yes"}, "sources": "S10, S11, S12", "notes": "Giro d'Italia 2013 elite mean BM 70.5 kg / BMI 21.4 (S10). Climbers leaner (~60\u201368 kg). Track sprinters heavier and more muscular (S12).", "sex": "M"}, {"id": "SP05", "sport": "Swimming", "position": "Pool (freestyle)", "category": "Endurance individual", "physical": {"heightMean": 184, "heightSD": 6, "weightMean": 78, "weightSD": 6, "bmiMean": 23.1, "bfMean": 8, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 9, "flexibility": 8, "coordination": 7, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "Yes", "equipmentCost": "Low", "entryAge": "4\u20138", "injuryRisk": "Low"}, "ireland": {"accessibility": 8, "clubsPrevalent": "Yes"}, "sources": "S13, S14, S15", "notes": "Modern male elite mean 183.8 cm / 78.4 kg / ~8% BF (S13). Long wingspan, long torso, large hands/feet typical. Phelps illustrative: 193 cm height, 201 cm wingspan.", "sex": "M"}, {"id": "SP06", "sport": "Rugby union", "position": "Forwards (tight five & loose)", "category": "Team field contact", "physical": {"heightMean": 189, "heightSD": 5, "weightMean": 111, "weightSD": 9, "bmiMean": 31, "bfMean": 15, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 6, "anaerobic": 8, "maxStrength": 10, "power": 8, "speed": 5, "endurance": 6, "flexibility": 4, "coordination": 7, "reaction": 6}, "categorical": {"teamSize": 15, "contact": "Heavy", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201310", "injuryRisk": "High"}, "ireland": {"accessibility": 9, "clubsPrevalent": "Yes"}, "sources": "S16, S17", "notes": "Brazier et al. (S16) review: RU forwards ~111 kg, BF ~15%. Back squat ~176 kg and bench ~131 kg in elite cohorts.", "sex": "M"}, {"id": "SP06b", "sport": "Rugby union", "position": "Backs", "category": "Team field contact", "physical": {"heightMean": 182, "heightSD": 5, "weightMean": 93, "weightSD": 7, "bmiMean": 28.1, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 8, "power": 9, "speed": 9, "endurance": 7, "flexibility": 5, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 15, "contact": "Heavy", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201310", "injuryRisk": "High"}, "ireland": {"accessibility": 9, "clubsPrevalent": "Yes"}, "sources": "S16, S17", "notes": "Backs ~93 kg, BF ~12% (S16); faster (10 m ~1.77 s) and more aerobically capable than forwards but lighter and weaker absolutely.", "sex": "M"}, {"id": "SP07", "sport": "Gymnastics", "position": "Female artistic / rhythmic (senior)", "category": "Individual aesthetic", "physical": {"heightMean": 160, "heightSD": 6, "weightMean": 55, "weightSD": 5, "bmiMean": 20.4, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 7, "maxStrength": 8, "power": 10, "speed": 6, "endurance": 5, "flexibility": 10, "coordination": 10, "reaction": 8}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "4\u20138", "injuryRisk": "High"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Some"}, "sources": "S18, S19, S20", "notes": "Slovenian high-performance female cohort 159.8 \u00b1 6.2 cm / 54.8 \u00b1 5.3 kg (S20). Spanish elite teens ~14% BF (S19). Tight height distribution \u2014 strong constraint.", "sex": "F"}, {"id": "SP08", "sport": "Rowing", "position": "Heavyweight (sweep / sculls)", "category": "Endurance team / pair", "physical": {"heightMean": 188, "heightSD": 5, "weightMean": 88, "weightSD": 6, "bmiMean": 24.9, "bfMean": 9, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 8, "maxStrength": 9, "power": 8, "speed": 4, "endurance": 9, "flexibility": 5, "coordination": 7, "reaction": 5}, "categorical": {"teamSize": 8, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "High", "entryAge": "12\u201316", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Some"}, "sources": "S21, S22", "notes": "FISA Junior World Champs cohort: 187.4 \u00b1 5.8 cm / 82.2 \u00b1 7.4 kg (S21). Traditional senior rowers: wingspan 189 \u00b1 5.8 cm, BF ~8% (S22). Long wingspan more predictive of performance than height alone.", "sex": "M"}, {"id": "SP09", "sport": "Tennis", "position": "Singles (ATP)", "category": "Individual racquet", "physical": {"heightMean": 186.9, "heightSD": 7.4, "weightMean": 81.6, "weightSD": 7.1, "bmiMean": 23.4, "bfMean": 10, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 8, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 8, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor / indoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "5\u20138", "injuryRisk": "Medium"}, "ireland": {"accessibility": 8, "clubsPrevalent": "Yes"}, "sources": "S23, S24", "notes": "2019 Barcelona Open ATP players 186.9 \u00b1 7.4 cm / 81.6 \u00b1 7.1 kg (S24). Top-10 height range 175\u2013198 cm (S23). Height correlates strongly with serve velocity.", "sex": "M"}, {"id": "SP10", "sport": "Gaelic football", "position": "Inter-county (all positions)", "category": "Team field", "physical": {"heightMean": 183, "heightSD": 4, "weightMean": 82, "weightSD": 5, "bmiMean": 24.5, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 7, "power": 8, "speed": 8, "endurance": 9, "flexibility": 5, "coordination": 8, "reaction": 7}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S25, S26", "notes": "Cullen et al. (S25) elite inter-county sample (n=148). Range 178\u2013187 cm / 81.0\u201383.6 kg (S26). Full-forwards carry slightly higher BF; half-backs/midfield leanest.", "sex": "M"}, {"id": "SP11", "sport": "Sprinting (track)", "position": "100 m", "category": "Individual power-speed", "physical": {"heightMean": 179, "heightSD": 8, "weightMean": 80, "weightSD": 8, "bmiMean": 24.9, "bfMean": 8, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 3, "anaerobic": 10, "maxStrength": 9, "power": 10, "speed": 10, "endurance": 2, "flexibility": 7, "coordination": 8, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Some"}, "sources": "S27, S28", "notes": "Beijing/Berlin/London 100m finalists 176\u2013179 cm / 77\u201380 kg (S27). US elite cohort 173 \u00b1 8 cm / 69.3 \u00b1 10 kg / BMI 23.1 (S28). Bolt outlier at 196 cm / 93 kg. ~70\u201380% Type II muscle fibres typical.", "sex": "M"}, {"id": "SP12", "sport": "Sport climbing", "position": "Lead / bouldering", "category": "Individual technical", "physical": {"heightMean": 174, "heightSD": 6, "weightMean": 64, "weightSD": 8, "bmiMean": 21.2, "bfMean": 8, "wingspanRatio": 1.02, "sittingHeightRatio": null}, "demands": {"aerobic": 6, "anaerobic": 7, "maxStrength": 9, "power": 8, "speed": 4, "endurance": 7, "flexibility": 9, "coordination": 9, "reaction": 7}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor / outdoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Growing"}, "sources": "S29, S30", "notes": "High-elite lead climbers 173.3 \u00b1 6.3 cm / 63.3 \u00b1 8.4 kg / BF 7.97 \u00b1 4.83% (S30). International-level climbers have higher ape index and arm-index than national-level; lower body mass and BF than less-elite (S29, S30).", "sex": "M"}, {"id": "SP13", "sport": "Boxing", "position": "Heavyweight (>91 kg)", "category": "Combat striking", "physical": {"heightMean": 187, "heightSD": 6.5, "weightMean": 110, "weightSD": 12, "bmiMean": 31.4, "bfMean": 13, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 9, "maxStrength": 9, "power": 9, "speed": 7, "endurance": 7, "flexibility": 5, "coordination": 9, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201318", "injuryRisk": "High"}, "ireland": {"accessibility": 8, "clubsPrevalent": "Yes"}, "sources": "S31, S32, S33", "notes": "Heavyweight world title contestants (n=237): 187.3 \u00b1 6.5 cm / 97.5 \u00b1 11.5 kg / reach 195.2 \u00b1 9.4 cm (S32). Population-level optimum ~110 kg for winning (S31). Long reach and tall stature strong positive predictors.", "sex": "M"}, {"id": "SP13b", "sport": "Boxing", "position": "Featherweight (~57 kg)", "category": "Combat striking", "physical": {"heightMean": 170, "heightSD": 5, "weightMean": 57, "weightSD": 2, "bmiMean": 19.7, "bfMean": 7, "wingspanRatio": 1.03, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 8, "power": 9, "speed": 8, "endurance": 7, "flexibility": 5, "coordination": 9, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201318", "injuryRisk": "High"}, "ireland": {"accessibility": 8, "clubsPrevalent": "Yes"}, "sources": "S33, S34", "notes": "Featherweight elite case study: BF 7.0% (BIA), somatotype 1.5-2.8-5.2 (S34). Boxing male means across weight classes BMI ~22.7 (S33). Lighter classes leaner and longer.", "sex": "M"}, {"id": "SP13F", "sport": "Boxing", "position": "Female (Olympic mean)", "category": "Combat striking", "physical": {"heightMean": 168, "heightSD": 6, "weightMean": 60, "weightSD": 8, "bmiMean": 22.5, "bfMean": 17, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 8, "power": 9, "speed": 8, "endurance": 7, "flexibility": 6, "coordination": 9, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "12\u201318", "injuryRisk": "High"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S33, S52", "notes": "Olympic female combat athletes \u2014 boxers: BMI ~22.5, BF ~13.9% in Reale (S33). Female boxers high BMD despite low fat mass (S52). Profile is across-weight-class mean.", "sex": "F"}, {"id": "SP14", "sport": "MMA", "position": "All disciplines (lightweight\u2013welterweight)", "category": "Combat mixed", "physical": {"heightMean": 177, "heightSD": 6, "weightMean": 75, "weightSD": 8, "bmiMean": 24, "bfMean": 10, "wingspanRatio": 1.03, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 8, "power": 9, "speed": 8, "endurance": 8, "flexibility": 7, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "16+", "injuryRisk": "High"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Growing"}, "sources": "S40, S33", "notes": "Profile bridges striking and grappling demands; published MMA elite cohorts span wider range than single-discipline combat sports (S40). Borrows from kickboxing/BJJ/wrestling.", "sex": "M"}, {"id": "SP15", "sport": "Judo", "position": "Senior elite (cross weight, male)", "category": "Combat grappling", "physical": {"heightMean": 176, "heightSD": 8, "weightMean": 80, "weightSD": 18, "bmiMean": 25.8, "bfMean": 13, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 10, "maxStrength": 9, "power": 8, "speed": 6, "endurance": 7, "flexibility": 8, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201314", "injuryRisk": "High"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S33, S36, S37", "notes": "Male judo Olympic mean BMI ~26.1 (S33). Spanish elite male profile from Canda (S37) varies sharply by weight class. Lower-weight judokas leaner; heavyweights up to 130+ kg.", "sex": "M"}, {"id": "SP15F", "sport": "Judo", "position": "Senior elite (cross weight, female)", "category": "Combat grappling", "physical": {"heightMean": 166, "heightSD": 7, "weightMean": 67, "weightSD": 12, "bmiMean": 24.5, "bfMean": 18, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 10, "maxStrength": 8, "power": 8, "speed": 6, "endurance": 7, "flexibility": 9, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201314", "injuryRisk": "High"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S33, S50, S51", "notes": "Female judoka Olympic mean BMI ~24.5 / BF ~17.6% (S33). Spanish and Polish female elite cohorts cluster similarly. High-rank female judokas: lower BF, larger neck/thoracic circumferences, longer hands and shorter thighs (S50).", "sex": "F"}, {"id": "SP16", "sport": "Brazilian jiu-jitsu", "position": "Senior elite (male)", "category": "Combat grappling", "physical": {"heightMean": 176, "heightSD": 6, "weightMean": 80, "weightSD": 10, "bmiMean": 25.8, "bfMean": 11, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 9, "maxStrength": 8, "power": 8, "speed": 5, "endurance": 8, "flexibility": 9, "coordination": 10, "reaction": 7}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Growing"}, "sources": "S38, S39", "notes": "Mesomorph somatotype dominant in BJJ elite (S38). Performance correlates more with technique and grappling-specific endurance than with extreme physical attributes; flatter physical-constraint profile vs other combat sports.", "sex": "M"}, {"id": "SP17", "sport": "Wrestling (freestyle)", "position": "Senior elite (male)", "category": "Combat grappling", "physical": {"heightMean": 171, "heightSD": 5, "weightMean": 75, "weightSD": 10, "bmiMean": 25.7, "bfMean": 11, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 10, "maxStrength": 10, "power": 9, "speed": 7, "endurance": 7, "flexibility": 8, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201316", "injuryRisk": "High"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S33, S41", "notes": "Turkish Super League freestyle wrestlers 170.9 \u00b1 5.3 cm / 75.2 \u00b1 9.6 kg / BMI 25.7 \u00b1 2.4 (S41). Olympic male wrestlers BMI ~24.2 (S33). Highest strength demand of all combat sports relative to bodyweight.", "sex": "M"}, {"id": "SP18", "sport": "Taekwondo", "position": "Senior elite (male)", "category": "Combat striking", "physical": {"heightMean": 180, "heightSD": 6, "weightMean": 67, "weightSD": 8, "bmiMean": 20.7, "bfMean": 9, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 6, "power": 10, "speed": 9, "endurance": 7, "flexibility": 10, "coordination": 9, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "Medium", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S33", "notes": "Olympic male taekwondo athletes lowest BMI of combat sports at ~20.7 (S33). Lower-body lean-mass dominant \u2014 kicks generate primary scoring. Tall, lean, and explosive.", "sex": "M"}, {"id": "SP19", "sport": "Kickboxing", "position": "Pro middle/welter (male)", "category": "Combat striking", "physical": {"heightMean": 177, "heightSD": 6, "weightMean": 72, "weightSD": 7, "bmiMean": 23, "bfMean": 8, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 8, "power": 9, "speed": 9, "endurance": 8, "flexibility": 8, "coordination": 9, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "12\u201318", "injuryRisk": "High"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Growing"}, "sources": "S35", "notes": "Pro middleweight/welterweight kickboxers: VO2max 54\u201369 ml/kg/min, BF 6.1\u201310.8%, mesomedial somatotype (S35). Knee extension peak torque higher than many comparable combat athletes.", "sex": "M"}, {"id": "SP20", "sport": "Badminton", "position": "Singles (male elite)", "category": "Individual racquet", "physical": {"heightMean": 181, "heightSD": 5, "weightMean": 73, "weightSD": 6, "bmiMean": 22.3, "bfMean": 9, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 5, "power": 9, "speed": 9, "endurance": 9, "flexibility": 8, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 8, "clubsPrevalent": "Yes"}, "sources": "S43, S46", "notes": "2007 BWF World Championships data: men's singles taller and leaner than doubles, with longer segments and lower sum-skinfolds (S43). Court-coverage demands favour tall, lean, long-limbed athletes.", "sex": "M"}, {"id": "SP20F", "sport": "Badminton", "position": "Singles (female elite)", "category": "Individual racquet", "physical": {"heightMean": 168, "heightSD": 5, "weightMean": 60, "weightSD": 6, "bmiMean": 21.3, "bfMean": 18, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 5, "power": 9, "speed": 9, "endurance": 9, "flexibility": 9, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 8, "clubsPrevalent": "Yes"}, "sources": "S43, S46", "notes": "Women's singles elite badminton at 2007 BWF Worlds \u2014 taller and leaner than doubles counterparts (S43). Heller (S46) profile aligns.", "sex": "F"}, {"id": "SP21", "sport": "Squash", "position": "Senior elite (male)", "category": "Individual racquet", "physical": {"heightMean": 180, "heightSD": 5, "weightMean": 75, "weightSD": 6, "bmiMean": 23.1, "bfMean": 10, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 9, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 9, "flexibility": 8, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201318", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S45, S42", "notes": "Top-class male squash players historically 178\u2013182 cm, lean and aerobically very well developed (S45). One of the most aerobically demanding racquet sports \u2014 closer to running than to tennis.", "sex": "M"}, {"id": "SP22", "sport": "Table tennis", "position": "Senior elite (male)", "category": "Individual racquet", "physical": {"heightMean": 177, "heightSD": 6, "weightMean": 72, "weightSD": 7, "bmiMean": 23, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 6, "anaerobic": 9, "maxStrength": 5, "power": 8, "speed": 8, "endurance": 7, "flexibility": 7, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u201310", "injuryRisk": "Low"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S44", "notes": "495-player study (288M, 207F): men's elite typical fat mass 12\u201320%, muscle mass >36\u201339%, mesomorphic-ectomorphic top-five players (S44). Physical-constraint profile flatter than other racquet sports \u2014 coordination and reaction dominate.", "sex": "M"}, {"id": "SP23", "sport": "Powerlifting", "position": "Middleweight (~83\u201393 kg)", "category": "Strength individual", "physical": {"heightMean": 174, "heightSD": 5, "weightMean": 90, "weightSD": 5, "bmiMean": 29.7, "bfMean": 16, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 3, "anaerobic": 9, "maxStrength": 10, "power": 7, "speed": 4, "endurance": 3, "flexibility": 5, "coordination": 7, "reaction": 5}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S47", "notes": "Oceania-region elite powerlifters across weight classes \u2014 highly mesomorphic with large girths and bony breadths; heavier lifters more endo-mesomorphic and disproportionately larger girths (S47). Shorter limbs vs height advantage lifters in absolute terms but is not strongly different across weight classes once Z-scaled.", "sex": "M"}, {"id": "SP24", "sport": "Olympic weightlifting", "position": "Middleweight (~73\u201389 kg)", "category": "Strength individual", "physical": {"heightMean": 170, "heightSD": 5, "weightMean": 81, "weightSD": 5, "bmiMean": 28, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 3, "anaerobic": 10, "maxStrength": 10, "power": 10, "speed": 6, "endurance": 3, "flexibility": 9, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "10\u201316", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Some"}, "sources": "S48", "notes": "World weightlifting champions cluster within tight body-mass bands by class; absolute strength scales with body mass^2/3 (S48). Shorter levers and exceptional ankle/hip/wrist mobility critical \u2014 flexibility demand much higher than powerlifting.", "sex": "M"}, {"id": "SP25", "sport": "Strongman", "position": "Elite open class", "category": "Strength individual", "physical": {"heightMean": 187.4, "heightSD": 7.1, "weightMean": 152.9, "weightSD": 19.3, "bmiMean": 43.5, "bfMean": 18.7, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 9, "maxStrength": 10, "power": 8, "speed": 5, "endurance": 6, "flexibility": 4, "coordination": 7, "reaction": 5}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor / indoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "20+", "injuryRisk": "High"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S49", "notes": "DXA cohort (n=18, 5 years): 187.4 \u00b1 7.1 cm / 152.9 \u00b1 19.3 kg / BMI 43.5 \u00b1 4.8 / lean mass 118.0 \u00b1 11.7 kg / BF 18.7 \u00b1 6.2% (S49). Among the largest male athletes in any sport. Bone mineral density 1.78 \u00b1 0.14 g/cm\u00b2 \u2014 extreme structural remodelling.", "sex": "M"}, {"id": "SP03F", "sport": "Distance running", "position": "Long-distance (marathon, female)", "category": "Endurance individual", "physical": {"heightMean": 165, "heightSD": 5, "weightMean": 51, "weightSD": 5, "bmiMean": 18.7, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 3, "maxStrength": 2, "power": 3, "speed": 4, "endurance": 10, "flexibility": 5, "coordination": 4, "reaction": 3}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S08", "notes": "Elite female marathoners 158\u2013175 cm / 43\u201359 kg, BMI 17\u201321 (S08). Female-specific physiological referents apply \u2014 VO2max lower in absolute terms but similar trained gaps.", "sex": "F"}, {"id": "SP05F", "sport": "Swimming", "position": "Pool freestyle (female)", "category": "Endurance individual", "physical": {"heightMean": 173, "heightSD": 6, "weightMean": 63, "weightSD": 5, "bmiMean": 21, "bfMean": 15.8, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 9, "flexibility": 8, "coordination": 7, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Indoor", "waterBased": "Yes", "equipmentCost": "Low", "entryAge": "4\u20138", "injuryRisk": "Low"}, "ireland": {"accessibility": 8, "clubsPrevalent": "Yes"}, "sources": "S13, S14", "notes": "University and elite female swimmers: 173.4 cm / 62.8 kg / BF ~15.8% (S13). Open-water French/Australian elite female cohorts 64.7 \u00b1 10.8 kg (S14).", "sex": "F"}, {"id": "SP08F", "sport": "Rowing", "position": "Heavyweight (female)", "category": "Endurance team / pair", "physical": {"heightMean": 180, "heightSD": 5, "weightMean": 78, "weightSD": 6, "bmiMean": 24.1, "bfMean": 16, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 8, "maxStrength": 9, "power": 8, "speed": 4, "endurance": 9, "flexibility": 5, "coordination": 7, "reaction": 5}, "categorical": {"teamSize": 8, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "High", "entryAge": "12\u201316", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Some"}, "sources": "S21, S22", "notes": "Female heavyweight elite rowers cluster slightly shorter and lighter than male counterparts but retain the long-wingspan / long-torso profile. Schema placeholder \u2014 discipline-specific female data thinner; targeted citation pass needed in v0.3.", "sex": "F"}, {"id": "SP11F", "sport": "Sprinting (track)", "position": "100 m (female)", "category": "Individual power-speed", "physical": {"heightMean": 168, "heightSD": 6, "weightMean": 60, "weightSD": 6, "bmiMean": 21.3, "bfMean": 13, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 3, "anaerobic": 10, "maxStrength": 9, "power": 10, "speed": 10, "endurance": 2, "flexibility": 7, "coordination": 8, "reaction": 10}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Some"}, "sources": "S27, S28", "notes": "US elite female 100m sprinters in cohort means with BMI ~21 (S28 mixed-sex sample). Similar somatotype emphasis (high mesomorphy, ~70\u201380% type II fibres typical).", "sex": "F"}, {"id": "SP26", "sport": "Cross-country skiing", "position": "Senior elite (male)", "category": "Endurance individual / pursuit", "physical": {"heightMean": 183, "heightSD": 4, "weightMean": 78, "weightSD": 7, "bmiMean": 23, "bfMean": 9, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 7, "maxStrength": 7, "power": 7, "speed": 6, "endurance": 10, "flexibility": 6, "coordination": 8, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S53, S54", "notes": "Norwegian elite: 183 \u00b1 4 cm / 78.4 \u00b1 7.3 kg (S53). Russian elite XC BMI 23.0 \u00b1 3.3 (S54). Whole-body lean mass critical \u2014 both upper- and lower-body propulsion. Heavier than distance runners but lighter than rowers.", "sex": "M"}, {"id": "SP26F", "sport": "Cross-country skiing", "position": "Senior elite (female)", "category": "Endurance individual / pursuit", "physical": {"heightMean": 170, "heightSD": 6, "weightMean": 65, "weightSD": 6, "bmiMean": 22.5, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 7, "maxStrength": 7, "power": 7, "speed": 6, "endurance": 10, "flexibility": 6, "coordination": 8, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S53, S54", "notes": "Norwegian elite female: 170 \u00b1 6 cm / 65.2 \u00b1 5.9 kg (S53). Female XC skiers tend to lower BMI than non-athletic peers.", "sex": "F"}, {"id": "SP27", "sport": "Biathlon", "position": "Senior elite (male)", "category": "Endurance individual / pursuit", "physical": {"heightMean": 181, "heightSD": 6, "weightMean": 73, "weightSD": 6, "bmiMean": 22.4, "bfMean": 13, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 7, "maxStrength": 6, "power": 6, "speed": 5, "endurance": 10, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "8\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S54, S55", "notes": "Biathletes 73.6 \u00b1 6.5 kg, muscle mass 83% of BM (S55). Lower endurance training volume than XC skiers (547 vs 779 h/yr) (S54). Reaction and fine-motor control (rifle) raise coordination demand above pure XC.", "sex": "M"}, {"id": "SP28", "sport": "Alpine skiing", "position": "Technical (slalom / GS, male)", "category": "Power-speed individual", "physical": {"heightMean": 178, "heightSD": 5, "weightMean": 80, "weightSD": 6, "bmiMean": 25.2, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 6, "anaerobic": 9, "maxStrength": 9, "power": 9, "speed": 8, "endurance": 6, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "Light", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "5\u201310", "injuryRisk": "High"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S56, S57", "notes": "Technical specialists shorter and lighter than speed specialists (S56). Sochi 2014 alpine skiers reported in S57. Quick edge-to-edge change of direction favours compact, powerful build.", "sex": "M"}, {"id": "SP28b", "sport": "Alpine skiing", "position": "Speed (super-G / downhill, male)", "category": "Power-speed individual", "physical": {"heightMean": 184, "heightSD": 5, "weightMean": 88, "weightSD": 8, "bmiMean": 26, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 6, "anaerobic": 9, "maxStrength": 9, "power": 9, "speed": 8, "endurance": 7, "flexibility": 5, "coordination": 8, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "Light", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "5\u201310", "injuryRisk": "High"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S56, S57", "notes": "Speed specialists heavier and more endomorphic than technical specialists (S56). Higher body mass aids gravity-driven speed but limits agility \u2014 distinct profile.", "sex": "M"}, {"id": "SP29", "sport": "Ice hockey", "position": "Forwards (male)", "category": "Team contact ice", "physical": {"heightMean": 183, "heightSD": 6, "weightMean": 89, "weightSD": 7, "bmiMean": 26.6, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 8, "power": 9, "speed": 9, "endurance": 7, "flexibility": 5, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 6, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "5\u201310", "injuryRisk": "High"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S58, S57", "notes": "KHL forwards 183 \u00b1 5.6 cm / 89.7 \u00b1 5.3 kg (S58). ELH similar. Sochi 2014 ice hockey tallest of all winter sports \u2014 Chara at 206 cm (S57).", "sex": "M"}, {"id": "SP29b", "sport": "Ice hockey", "position": "Defensemen (male)", "category": "Team contact ice", "physical": {"heightMean": 186, "heightSD": 5, "weightMean": 92, "weightSD": 6, "bmiMean": 26.6, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 9, "power": 9, "speed": 8, "endurance": 7, "flexibility": 5, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 6, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "5\u201310", "injuryRisk": "High"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S58", "notes": "KHL defensemen 185.7 \u00b1 3.6 cm / 92.5 \u00b1 4.0 kg (S58). Slightly taller and heavier than forwards across both KHL and ELH cohorts.", "sex": "M"}, {"id": "SP30", "sport": "Water polo", "position": "Senior elite (male)", "category": "Team water contact", "physical": {"heightMean": 188.6, "heightSD": 6.8, "weightMean": 87.6, "weightSD": 12.8, "bmiMean": 24.6, "bfMean": 12.1, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 8, "power": 9, "speed": 7, "endurance": 8, "flexibility": 6, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 7, "contact": "Heavy", "environment": "Indoor", "waterBased": "Yes", "equipmentCost": "Medium", "entryAge": "8\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 3, "clubsPrevalent": "Some"}, "sources": "S59, S60", "notes": "Hungarian/European elite male water polo 188.6 \u00b1 6.8 cm / 87.6 \u00b1 12.8 kg / BF 12.1 \u00b1 4.0% (S59). Skeletal muscle mass 43.9 \u00b1 5.5 kg. Among tallest team-sport athletes; long wingspan and treading-water (eggbeater) endurance critical.", "sex": "M"}, {"id": "SP30F", "sport": "Water polo", "position": "Senior elite (female)", "category": "Team water contact", "physical": {"heightMean": 173.5, "heightSD": 6.8, "weightMean": 69.8, "weightSD": 9.8, "bmiMean": 23.2, "bfMean": 21.5, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 7, "power": 8, "speed": 7, "endurance": 8, "flexibility": 7, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 7, "contact": "Heavy", "environment": "Indoor", "waterBased": "Yes", "equipmentCost": "Medium", "entryAge": "8\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 3, "clubsPrevalent": "Some"}, "sources": "S59", "notes": "Female elite: 173.5 \u00b1 6.8 cm / 69.8 \u00b1 9.8 kg / BF 21.5 \u00b1 4.8% (S59). FFM 54.5 \u00b1 6.7 kg.", "sex": "F"}, {"id": "SP31", "sport": "Kayaking", "position": "Sprint (male)", "category": "Endurance individual / pair", "physical": {"heightMean": 180, "heightSD": 5, "weightMean": 82, "weightSD": 6, "bmiMean": 25.3, "bfMean": 9, "wingspanRatio": 1.05, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 8, "power": 9, "speed": 6, "endurance": 8, "flexibility": 6, "coordination": 7, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "Medium", "entryAge": "8\u201314", "injuryRisk": "Low"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Yes"}, "sources": "S61", "notes": "Elite male kayakers: BM, BMI, SMMI predict force and power output (S61). Sprint specialists heavier than long-distance. Long arm span and shoulder strength dominate.", "sex": "M"}, {"id": "SP32", "sport": "Sailing", "position": "Finn class (heavy dinghy, male)", "category": "Individual technical", "physical": {"heightMean": 186, "heightSD": 5, "weightMean": 96, "weightSD": 8, "bmiMean": 27.7, "bfMean": 16, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 6, "anaerobic": 5, "maxStrength": 7, "power": 6, "speed": 3, "endurance": 6, "flexibility": 5, "coordination": 9, "reaction": 7}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "High", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S62", "notes": "Heavy-dinghy class \u2014 endomorphic-mesomorph somatotype (3.94-5.50-1.63) (S62). Hiking out demands core/leg strength and significant body mass for righting moment. Comparable endomorphy to rowers.", "sex": "M"}, {"id": "SP32b", "sport": "Sailing", "position": "Light dinghy (Laser/ILCA, male)", "category": "Individual technical", "physical": {"heightMean": 180, "heightSD": 6, "weightMean": 80, "weightSD": 5, "bmiMean": 24.7, "bfMean": 11, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 5, "maxStrength": 6, "power": 5, "speed": 3, "endurance": 7, "flexibility": 6, "coordination": 9, "reaction": 7}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "Medium", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Yes"}, "sources": "S63", "notes": "Sub-elite to elite young sailors: top performers leaner, with lower trunk/limb fat mass (S63). Laser/ILCA height and sitting height linked to performance per related literature.", "sex": "M"}, {"id": "SP33", "sport": "Volleyball", "position": "Senior elite (male, all positions)", "category": "Team court", "physical": {"heightMean": 195, "heightSD": 6, "weightMean": 89, "weightSD": 7, "bmiMean": 23.4, "bfMean": 10, "wingspanRatio": 1.05, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 9, "maxStrength": 7, "power": 10, "speed": 7, "endurance": 7, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 6, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S64", "notes": "Serbian national league elite \u2014 significantly taller than handball counterparts and sedentary controls (S64). Vertical jump and reach dominate \u2014 height advantage compounded by long wingspan.", "sex": "M"}, {"id": "SP34", "sport": "Handball", "position": "Wing (male)", "category": "Team court contact", "physical": {"heightMean": 178, "heightSD": 5, "weightMean": 81, "weightSD": 6, "bmiMean": 25.6, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 8, "power": 9, "speed": 9, "endurance": 8, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 7, "contact": "Medium", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "Some"}, "sources": "S65, S66", "notes": "Wing players lightest and shortest in handball; 177\u2013178 cm / 80 kg (S65). Speed and one-on-one finishing dominate the wing role.", "sex": "M"}, {"id": "SP34b", "sport": "Handball", "position": "Backcourt (male)", "category": "Team court contact", "physical": {"heightMean": 198, "heightSD": 5, "weightMean": 98, "weightSD": 7, "bmiMean": 25, "bfMean": 11, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 8, "power": 10, "speed": 7, "endurance": 7, "flexibility": 5, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 7, "contact": "Medium", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "Some"}, "sources": "S65, S66", "notes": "Backs tallest non-pivot players: 193\u2013202 cm / 91\u2013102 kg (S65). Throwing power and over-the-defence shooting favour tall, long-armed athletes.", "sex": "M"}, {"id": "SP34c", "sport": "Handball", "position": "Pivot / line (male)", "category": "Team court contact", "physical": {"heightMean": 195, "heightSD": 5, "weightMean": 110, "weightSD": 8, "bmiMean": 28.9, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 10, "maxStrength": 10, "power": 8, "speed": 6, "endurance": 7, "flexibility": 4, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 7, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201314", "injuryRisk": "High"}, "ireland": {"accessibility": 2, "clubsPrevalent": "Some"}, "sources": "S65, S66", "notes": "Pivots heaviest: 188\u2013202 cm / 105\u2013121 kg (S65). Operate in the contact zone of the 6m line; rugby-prop-style frontal collisions.", "sex": "M"}, {"id": "SP35", "sport": "Field hockey", "position": "Senior elite (male)", "category": "Team field", "physical": {"heightMean": 175, "heightSD": 5, "weightMean": 73, "weightSD": 6, "bmiMean": 23.8, "bfMean": 9.4, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 11, "contact": "Light", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Yes"}, "sources": "S67", "notes": "London 2012 Olympic male field hockey players ~175 cm / ~72 kg, BF averaging 9.4% across studies (S67). Hockey players shorter and lighter than average Olympian. Stooped running posture and stick-control demands reward agility over size.", "sex": "M"}, {"id": "SP36", "sport": "Hurling", "position": "Full-back (male inter-county)", "category": "Team field stick", "physical": {"heightMean": 184.3, "heightSD": 3.7, "weightMean": 88.7, "weightSD": 5.7, "bmiMean": 26.1, "bfMean": 13.2, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 8, "power": 8, "speed": 7, "endurance": 8, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S68, S69", "notes": "Collins 2014 (S68): FB 184.3 \u00b1 3.7 cm / 88.7 \u00b1 5.7 kg / 13.2 \u00b1 3.1% AT. Tallest, heaviest, slightly higher adiposity than backline cohort \u2014 aerial dominance and physical presence in the FB line.", "sex": "M"}, {"id": "SP36b", "sport": "Hurling", "position": "Half-back (male inter-county)", "category": "Team field stick", "physical": {"heightMean": 185.6, "heightSD": 5.1, "weightMean": 84.2, "weightSD": 9, "bmiMean": 24.5, "bfMean": 12.5, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 7, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S68, S69", "notes": "Collins (S68): HB 185.6 \u00b1 5.1 cm / 84.2 \u00b1 9 kg / 12.5 \u00b1 1.7% AT. Linkage line \u2014 combines aerial work with high-volume running.", "sex": "M"}, {"id": "SP36c", "sport": "Hurling", "position": "Midfield (male inter-county)", "category": "Team field stick", "physical": {"heightMean": 179.9, "heightSD": 6, "weightMean": 79.9, "weightSD": 4.9, "bmiMean": 24.7, "bfMean": 11.8, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 9, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 10, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S68, S69", "notes": "Collins (S68): MF 179.9 \u00b1 6 cm / 79.9 \u00b1 4.9 kg / 11.8 \u00b1 2.1% AT. Lowest adiposity in the team \u2014 highest aerobic and running demand per published GPS data.", "sex": "M"}, {"id": "SP36d", "sport": "Hurling", "position": "Half-forward (male inter-county)", "category": "Team field stick", "physical": {"heightMean": 181.6, "heightSD": 4.6, "weightMean": 80.2, "weightSD": 5.8, "bmiMean": 24.3, "bfMean": 13, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 10, "maxStrength": 7, "power": 9, "speed": 9, "endurance": 9, "flexibility": 6, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S68, S69", "notes": "Collins (S68): HF 181.6 \u00b1 4.6 cm / 80.2 \u00b1 5.8 kg / 13.0 \u00b1 0.4% AT. Speed and scoring; CMJ peak power among highest in team.", "sex": "M"}, {"id": "SP36e", "sport": "Hurling", "position": "Full-forward (male inter-county)", "category": "Team field stick", "physical": {"heightMean": 177.3, "heightSD": 8.9, "weightMean": 75.5, "weightSD": 8.6, "bmiMean": 24, "bfMean": 12.8, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 7, "power": 10, "speed": 9, "endurance": 8, "flexibility": 6, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S68, S69", "notes": "Collins (S68): FF 177.3 \u00b1 8.9 cm / 75.5 \u00b1 8.6 kg / 12.8 \u00b1 1.8% AT. Widest height SD in the team \u2014 scoring forwards vary from compact wristy strikers to tall target men. Highest CMJ heights recorded in this position.", "sex": "M"}, {"id": "SP37", "sport": "Camogie", "position": "Senior inter-county (female)", "category": "Team field stick", "physical": {"heightMean": 169, "heightSD": 5.6, "weightMean": 68.4, "weightSD": 7.4, "bmiMean": 23.9, "bfMean": 23, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 7, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 15, "contact": "Light", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 9, "clubsPrevalent": "Yes"}, "sources": "S70, S71, S72", "notes": "Daly 2021 (S70): 45 inter-county players, 168.97 \u00b1 5.60 cm / 68.37 \u00b1 7.44 kg. Young 2022 (S71) GPS cohort 167.2 \u00b1 6.3 cm / 67.0 \u00b1 7.5 kg. Positional differences in physical tests trivial-to-small.", "sex": "F"}, {"id": "SP38", "sport": "Ladies Gaelic football", "position": "Senior inter-county (female)", "category": "Team field", "physical": {"heightMean": 167, "heightSD": 6, "weightMean": 65, "weightSD": 6, "bmiMean": 23.3, "bfMean": 22, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 7, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201312", "injuryRisk": "Medium"}, "ireland": {"accessibility": 9, "clubsPrevalent": "Yes"}, "sources": "S72, S73", "notes": "Adolescent and senior LGFA data from Byrne 2022 (S72) and supplementary literature (S73). Profile closely mirrors camogie with slightly lower BMI; female-specific elite anthropometric data still relatively thin and a clear v0.4 priority.", "sex": "F"}, {"id": "SP10b", "sport": "Gaelic football", "position": "Half-back / midfield (male, lean cohort)", "category": "Team field", "physical": {"heightMean": 183, "heightSD": 4, "weightMean": 81, "weightSD": 5, "bmiMean": 24.2, "bfMean": 11.5, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 9, "maxStrength": 7, "power": 8, "speed": 8, "endurance": 10, "flexibility": 5, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S25, S26, S68", "notes": "Half-backs and midfielders consistently leanest within elite Gaelic football cohorts (S25). Highest aerobic and Yo-Yo demand. Mirrors the midfield trend seen in hurling (S68).", "sex": "M"}, {"id": "SP10c", "sport": "Gaelic football", "position": "Full-forward (male)", "category": "Team field", "physical": {"heightMean": 184, "heightSD": 5, "weightMean": 84, "weightSD": 6, "bmiMean": 24.8, "bfMean": 13.5, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 7, "power": 9, "speed": 9, "endurance": 8, "flexibility": 6, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 15, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "6\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 10, "clubsPrevalent": "Yes"}, "sources": "S25, S26", "notes": "Full-forwards in elite Gaelic football carry slightly higher adiposity than midfield/half-back lines (S25). Scoring and aerial finishing dominant; SJ and CMJ highest of all positions.", "sex": "M"}, {"id": "SP33F", "sport": "Volleyball", "position": "Senior elite (female, all positions)", "category": "Team court", "physical": {"heightMean": 180, "heightSD": 6, "weightMean": 70, "weightSD": 6, "bmiMean": 21.6, "bfMean": 18, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 9, "maxStrength": 6, "power": 10, "speed": 7, "endurance": 7, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 6, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S74", "notes": "Female elite volleyball \u2014 taller than basketball or handball counterparts, lowest body fat in female team-sport literature, balanced mesomorphic build (S74). Selected youth national-team players 172 \u00b1 6 cm / 62 \u00b1 7 kg; senior elite cluster ~178\u2013183 cm.", "sex": "F"}, {"id": "SP34F", "sport": "Handball", "position": "Wing (female)", "category": "Team court contact", "physical": {"heightMean": 170, "heightSD": 5, "weightMean": 64, "weightSD": 5, "bmiMean": 22.1, "bfMean": 20, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 10, "maxStrength": 7, "power": 9, "speed": 9, "endurance": 8, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 7, "contact": "Medium", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "Some"}, "sources": "S75, S76", "notes": "Female handball wing players among the lightest; BMI 20.78 \u00b1 1.22 (S75). Female elite handball Super Liga cohort mean 27.5 \u00b1 4.5 y, lean mass and fat redistribute over preseason.", "sex": "F"}, {"id": "SP34Fb", "sport": "Handball", "position": "Pivot / line (female)", "category": "Team court contact", "physical": {"heightMean": 180, "heightSD": 5, "weightMean": 80, "weightSD": 6, "bmiMean": 24.7, "bfMean": 25, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 10, "maxStrength": 9, "power": 8, "speed": 6, "endurance": 7, "flexibility": 5, "coordination": 8, "reaction": 8}, "categorical": {"teamSize": 7, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201314", "injuryRisk": "High"}, "ireland": {"accessibility": 2, "clubsPrevalent": "Some"}, "sources": "S75, S76", "notes": "Female pivots heaviest in the team; BMI 24.37 \u00b1 1.66 (S75). Operate against physical contact at the 6m line; similar role-shape to male game but lower absolute mass.", "sex": "F"}, {"id": "SP35F", "sport": "Field hockey", "position": "Senior elite (female)", "category": "Team field", "physical": {"heightMean": 165, "heightSD": 6, "weightMean": 62, "weightSD": 6, "bmiMean": 22.8, "bfMean": 22, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 11, "contact": "Light", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Yes"}, "sources": "S67, S77", "notes": "Female elite field hockey \u2014 international cohorts 161\u2013168 cm / 60\u201365 kg (S67). US collegiate cohort BF ~22% (S77). Like men, shorter and lighter than the average Olympic female athlete.", "sex": "F"}, {"id": "SP29F", "sport": "Ice hockey", "position": "Senior elite (female)", "category": "Team contact ice", "physical": {"heightMean": 170, "heightSD": 6, "weightMean": 70, "weightSD": 7, "bmiMean": 24.2, "bfMean": 22, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 7, "power": 8, "speed": 8, "endurance": 7, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 6, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "5\u201310", "injuryRisk": "High"}, "ireland": {"accessibility": 3, "clubsPrevalent": "Some"}, "sources": "S77, S58", "notes": "University of Alberta women's ice hockey 112 players (21.4 \u00b1 2.9 y) (S77). Adolescent elite female ice hockey 14.96 y mean; taller-heavier prototype does NOT translate as cleanly to on-ice performance for females as it does for males.", "sex": "F"}, {"id": "SP39", "sport": "Futsal", "position": "Senior elite (male)", "category": "Team court", "physical": {"heightMean": 176, "heightSD": 6, "weightMean": 73, "weightSD": 6, "bmiMean": 23.6, "bfMean": 11, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 10, "maxStrength": 6, "power": 9, "speed": 9, "endurance": 8, "flexibility": 6, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 5, "contact": "Light", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Some"}, "sources": "S85", "notes": "Systematic review of 10 elite male futsal studies \u2014 field players have higher VO2max, VT and HR responses than goalkeepers (S85). Mesomorphic somatotype dominant; high anaerobic-to-aerobic ratio reflects 40m \u00d7 20m court demands.", "sex": "M"}, {"id": "SP39F", "sport": "Futsal", "position": "Senior elite (female, Brazilian)", "category": "Team court", "physical": {"heightMean": 163, "heightSD": 6, "weightMean": 60, "weightSD": 6, "bmiMean": 22.6, "bfMean": 22, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 10, "maxStrength": 6, "power": 9, "speed": 9, "endurance": 8, "flexibility": 6, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 5, "contact": "Light", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "5\u201310", "injuryRisk": "Medium"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S86", "notes": "20-year Brazilian elite female futsal study (n=396) (S86). Mesomorphic-endomorphic somatotype with measurable lean-mass increases across cohorts since 2001.", "sex": "F"}, {"id": "SP40", "sport": "American football", "position": "Offensive / defensive line (NFL)", "category": "Team field contact", "physical": {"heightMean": 191, "heightSD": 4, "weightMean": 138, "weightSD": 10, "bmiMean": 37.8, "bfMean": 25, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 8, "maxStrength": 10, "power": 8, "speed": 5, "endurance": 5, "flexibility": 4, "coordination": 8, "reaction": 7}, "categorical": {"teamSize": 11, "contact": "Heavy", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "12\u201318", "injuryRisk": "High"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S80, S81", "notes": "Linemen heaviest position in NFL; lean-mass accrual plateaus around 114 kg above which fat mass dominates (S80). DXA studies of linemen show BF 24\u201328% (S81). Comparable mass to elite strongman but slightly leaner.", "sex": "M"}, {"id": "SP40b", "sport": "American football", "position": "Wide receiver / defensive back (NFL)", "category": "Team field contact", "physical": {"heightMean": 183, "heightSD": 5, "weightMean": 88, "weightSD": 6, "bmiMean": 26.3, "bfMean": 10, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 10, "maxStrength": 8, "power": 10, "speed": 10, "endurance": 7, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 11, "contact": "Heavy", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "12\u201318", "injuryRisk": "High"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S80, S81", "notes": "Skill positions \u2014 among the leanest and most explosive athletes in any team sport (S81). 40-yard dash and vertical jump dominate the NFL Combine evaluation.", "sex": "M"}, {"id": "SP40c", "sport": "American football", "position": "Quarterback (NFL)", "category": "Team field contact", "physical": {"heightMean": 189, "heightSD": 5, "weightMean": 100, "weightSD": 6, "bmiMean": 28, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 6, "anaerobic": 8, "maxStrength": 7, "power": 9, "speed": 7, "endurance": 6, "flexibility": 6, "coordination": 10, "reaction": 10}, "categorical": {"teamSize": 11, "contact": "Heavy", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "12\u201318", "injuryRisk": "Medium"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S81", "notes": "Quarterback profile distinct \u2014 taller average than receivers (passing visibility), heavier and stronger than skill positions but markedly leaner than linemen. Coordination and reaction time most predictive of QB success.", "sex": "M"}, {"id": "SP41", "sport": "Australian rules football", "position": "Senior elite (male, AFL)", "category": "Team field contact", "physical": {"heightMean": 188, "heightSD": 7, "weightMean": 86, "weightSD": 8, "bmiMean": 24.3, "bfMean": 12.3, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 7, "power": 9, "speed": 9, "endurance": 9, "flexibility": 5, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 18, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "8\u201314", "injuryRisk": "High"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S78, S79", "notes": "Experienced AFL men 188 \u00b1 6.9 cm / 86 \u00b1 7.8 kg / WBLH FM% 12.3 \u00b1 2.1% (S79). Tall midfielders (200+ cm ruckmen the extreme), tall key-position players forward and back, compact half-back and small-forward types.", "sex": "M"}, {"id": "SP41F", "sport": "Australian rules football", "position": "Senior elite (female, AFLW)", "category": "Team field contact", "physical": {"heightMean": 171, "heightSD": 6, "weightMean": 65, "weightSD": 6, "bmiMean": 22.2, "bfMean": 19.2, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 7, "power": 8, "speed": 8, "endurance": 9, "flexibility": 5, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 18, "contact": "Medium", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "12\u201318", "injuryRisk": "High"}, "ireland": {"accessibility": 1, "clubsPrevalent": "No"}, "sources": "S79", "notes": "Experienced AFLW women 171 \u00b1 6.3 cm / 65 \u00b1 6.2 kg / WBLH FM% 19.2 \u00b1 3.5% (S79). Significant musculoskeletal adaptation seen between inexperienced and experienced players even across short careers.", "sex": "F"}, {"id": "SP42", "sport": "Netball", "position": "Senior elite (female, mixed positions)", "category": "Team court", "physical": {"heightMean": 182.4, "heightSD": 7.2, "weightMean": 73.4, "weightSD": 7, "bmiMean": 22.1, "bfMean": 22, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 8, "anaerobic": 9, "maxStrength": 6, "power": 9, "speed": 8, "endurance": 8, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 7, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S82, S83", "notes": "Australian/NZ elite netball 182.4 \u00b1 7.2 cm / 73.4 \u00b1 6.95 kg (S82). Tall by female-team-sport standards \u2014 comparable to volleyball but lower body fat. Vertical jump and 20m sprint discriminate elite from sub-elite.", "sex": "F"}, {"id": "SP42b", "sport": "Netball", "position": "Goal shooter / goal keeper (female)", "category": "Team court", "physical": {"heightMean": 188, "heightSD": 5, "weightMean": 78, "weightSD": 6, "bmiMean": 22.1, "bfMean": 22, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 8, "maxStrength": 6, "power": 10, "speed": 7, "endurance": 7, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 7, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10\u201314", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S82", "notes": "GS/GK tallest positions in netball \u2014 height-related advantages near the goal post for shooting accuracy and defensive intercepts (S82). Height is more constraint than skill ceiling at elite level.", "sex": "F"}, {"id": "SP43", "sport": "Lacrosse", "position": "Midfielder (male, NCAA)", "category": "Team field contact", "physical": {"heightMean": 184, "heightSD": 5, "weightMean": 88, "weightSD": 6, "bmiMean": 26, "bfMean": 12, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 7, "power": 9, "speed": 9, "endurance": 9, "flexibility": 5, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 10, "contact": "Heavy", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "10\u201316", "injuryRisk": "High"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S84", "notes": "NCAA Division I men's lacrosse midfielders ~184 cm / 88 kg / BF ~12% (S84). Combines field-hockey-like running demands with stick-handling and physical contact closer to rugby \u2014 a hybrid profile.", "sex": "M"}, {"id": "SP43F", "sport": "Lacrosse", "position": "Senior elite (female, NCAA)", "category": "Team field", "physical": {"heightMean": 167, "heightSD": 5, "weightMean": 65, "weightSD": 6, "bmiMean": 23.3, "bfMean": 22, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 9, "maxStrength": 6, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 12, "contact": "Light", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "10\u201316", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S84", "notes": "NCAA Division I women's lacrosse 167 \u00b1 5 cm / 65 \u00b1 6 kg / BF ~22% (S84). Less contact permitted than the men's game; profile closer to field hockey than to the men's lacrosse midfielder.", "sex": "F"}, {"id": "SP44", "sport": "Javelin", "position": "Senior elite (male)", "category": "Power-throw individual", "physical": {"heightMean": 186, "heightSD": 5, "weightMean": 88, "weightSD": 7, "bmiMean": 25.4, "bfMean": 11, "wingspanRatio": 1.05, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 8, "maxStrength": 9, "power": 10, "speed": 8, "endurance": 4, "flexibility": 8, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S87, S88", "notes": "Highest ectomorphy of the throwing disciplines. Long levers, exceptional shoulder ROM, and explosive whole-body power. Tend to be taller than shot putters but lighter.", "sex": "M"}, {"id": "SP44F", "sport": "Javelin", "position": "Senior elite (female)", "category": "Power-throw individual", "physical": {"heightMean": 176, "heightSD": 5, "weightMean": 75, "weightSD": 7, "bmiMean": 24.2, "bfMean": 18, "wingspanRatio": 1.05, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 8, "maxStrength": 8, "power": 10, "speed": 8, "endurance": 4, "flexibility": 8, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Some"}, "sources": "S87, S88", "notes": "Female javelin throwers cluster ~172-180 cm / 70-80 kg. Same long-lever ectomorph profile as men's; throwing rotational power is the gatekeeper.", "sex": "F"}, {"id": "SP45", "sport": "Discus throw", "position": "Senior elite (male)", "category": "Power-throw individual", "physical": {"heightMean": 193, "heightSD": 5, "weightMean": 110, "weightSD": 10, "bmiMean": 29.5, "bfMean": 14, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 4, "anaerobic": 7, "maxStrength": 10, "power": 10, "speed": 6, "endurance": 4, "flexibility": 7, "coordination": 8, "reaction": 7}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S87, S88, S89", "notes": "Tallest of the throwing disciplines. Discus rewards long levers + rotational power. Higher mesomorphy and lean mass than javelin throwers.", "sex": "M"}, {"id": "SP46", "sport": "Shot put", "position": "Senior elite (male)", "category": "Power-throw individual", "physical": {"heightMean": 188, "heightSD": 6, "weightMean": 122, "weightSD": 14, "bmiMean": 34.5, "bfMean": 18, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 4, "anaerobic": 7, "maxStrength": 10, "power": 10, "speed": 5, "endurance": 3, "flexibility": 6, "coordination": 8, "reaction": 7}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S87, S88", "notes": "Heaviest of the throwers (excluding hammer). Highest body fat and skinfold thicknesses across throwing events. Endomorphic-mesomorph dominant.", "sex": "M"}, {"id": "SP47", "sport": "High jump", "position": "Senior elite (male)", "category": "Power-jump individual", "physical": {"heightMean": 192, "heightSD": 4, "weightMean": 76, "weightSD": 5, "bmiMean": 20.6, "bfMean": 7, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 4, "anaerobic": 7, "maxStrength": 7, "power": 10, "speed": 8, "endurance": 3, "flexibility": 9, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S90, S95", "notes": "Among the tallest non-basketball athletes \u2014 188-198 cm typical at elite level. Highest height-to-weight ratio in track & field. Long levers, low body fat, exceptional single-leg power.", "sex": "M"}, {"id": "SP47F", "sport": "High jump", "position": "Senior elite (female)", "category": "Power-jump individual", "physical": {"heightMean": 180, "heightSD": 5, "weightMean": 60, "weightSD": 5, "bmiMean": 18.5, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 4, "anaerobic": 7, "maxStrength": 7, "power": 10, "speed": 8, "endurance": 3, "flexibility": 9, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S91", "notes": "London 2012 Olympic high jump finalists (n=12) mean BMI 18.3 \u00b1 0.3. Female high jumpers maintain remarkably low body mass relative to most athletic populations.", "sex": "F"}, {"id": "SP48", "sport": "Long jump", "position": "Senior elite (male)", "category": "Power-jump individual", "physical": {"heightMean": 184, "heightSD": 5, "weightMean": 79, "weightSD": 7, "bmiMean": 23.3, "bfMean": 8, "wingspanRatio": 1.04, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 9, "maxStrength": 8, "power": 10, "speed": 10, "endurance": 3, "flexibility": 7, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S92, S93", "notes": "21 top male long jumpers 184.19 \u00b1 4.68 cm / 78.86 \u00b1 6.81 kg. Sprint-power hybrid \u2014 second only to 100m for pure speed demand. Chest circumference predicts distance.", "sex": "M"}, {"id": "SP48F", "sport": "Long jump", "position": "Senior elite (female)", "category": "Power-jump individual", "physical": {"heightMean": 172, "heightSD": 5, "weightMean": 62, "weightSD": 6, "bmiMean": 21, "bfMean": 16, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 9, "maxStrength": 7, "power": 10, "speed": 10, "endurance": 3, "flexibility": 7, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10-16", "injuryRisk": "Medium"}, "ireland": {"accessibility": 4, "clubsPrevalent": "Some"}, "sources": "S92", "notes": "22 female national-elite long jumpers in Reichmuth 2025. Sex and chest circumference explain 52% of jump distance variance.", "sex": "F"}, {"id": "SP49", "sport": "Triple jump", "position": "Senior elite (male)", "category": "Power-jump individual", "physical": {"heightMean": 188, "heightSD": 5, "weightMean": 80, "weightSD": 6, "bmiMean": 22.6, "bfMean": 8, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 9, "maxStrength": 9, "power": 10, "speed": 9, "endurance": 3, "flexibility": 7, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "10-16", "injuryRisk": "High"}, "ireland": {"accessibility": 3, "clubsPrevalent": "No"}, "sources": "S95", "notes": "More mesomorphic than high jumpers, taller than sprinters. Impact forces in triple jump are among the highest in athletics \u2014 injury risk elevated. Eccentric leg strength critical.", "sex": "M"}, {"id": "SP50", "sport": "Pole vault", "position": "Senior elite (male)", "category": "Power-skill individual", "physical": {"heightMean": 186, "heightSD": 4, "weightMean": 79, "weightSD": 4, "bmiMean": 22.8, "bfMean": 8, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 8, "maxStrength": 9, "power": 10, "speed": 9, "endurance": 3, "flexibility": 8, "coordination": 10, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "10-16", "injuryRisk": "High"}, "ireland": {"accessibility": 3, "clubsPrevalent": "No"}, "sources": "S94", "notes": "Top-20 male vaulters 186.3 cm / 78.9 kg. Sprinting speed \u00d7 upper-body strength \u00d7 gymnastic body control \u2014 among the most complex athletic skill profiles. Wide variation tolerated within elite (68-86 kg range).", "sex": "M"}, {"id": "SP50F", "sport": "Pole vault", "position": "Senior elite (female)", "category": "Power-skill individual", "physical": {"heightMean": 171, "heightSD": 4, "weightMean": 59, "weightSD": 4, "bmiMean": 20.2, "bfMean": 14, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 8, "maxStrength": 8, "power": 10, "speed": 9, "endurance": 3, "flexibility": 8, "coordination": 10, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "High", "entryAge": "10-16", "injuryRisk": "High"}, "ireland": {"accessibility": 3, "clubsPrevalent": "No"}, "sources": "S94", "notes": "Top-20 female vaulters 171 cm / 59.25 kg. Like the men, broad height range tolerated (160-180 cm) but tight weight band at the top of the discipline.", "sex": "F"}, {"id": "SP51", "sport": "Triathlon", "position": "Olympic distance (male)", "category": "Endurance multi", "physical": {"heightMean": 178, "heightSD": 5, "weightMean": 70, "weightSD": 5, "bmiMean": 22.1, "bfMean": 9, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 7, "maxStrength": 5, "power": 6, "speed": 6, "endurance": 10, "flexibility": 5, "coordination": 7, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "High", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S96, S97, S98", "notes": "London 2012 Olympic triathletes \u2014 a little smaller than average Olympian, much lower BMI. Profile sits between distance running and road cycling \u2014 lean but with more upper-body mass than pure runners.", "sex": "M"}, {"id": "SP51F", "sport": "Triathlon", "position": "Olympic distance (female)", "category": "Endurance multi", "physical": {"heightMean": 167, "heightSD": 5, "weightMean": 56, "weightSD": 5, "bmiMean": 20.1, "bfMean": 16, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 10, "anaerobic": 7, "maxStrength": 5, "power": 6, "speed": 6, "endurance": 10, "flexibility": 5, "coordination": 7, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "High", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 7, "clubsPrevalent": "Yes"}, "sources": "S96, S98", "notes": "Female elite triathletes 167 cm / 56 kg at BMI 20.1. Same balanced swim-bike-run profile as men's, scaled.", "sex": "F"}, {"id": "SP52", "sport": "Pickleball", "position": "Senior recreational/competitive", "category": "Individual racquet", "physical": {"heightMean": 175, "heightSD": 9, "weightMean": 76, "weightSD": 12, "bmiMean": 24.8, "bfMean": 18, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 6, "maxStrength": 4, "power": 6, "speed": 5, "endurance": 5, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor / indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Growing"}, "sources": "S101", "notes": "Lower physical demand than tennis or squash \u2014 coordination, reaction time, and tactical sense dominate. Wide age range tolerated; fastest-growing sport in the US. Body type flatness is the entry point.", "sex": "M"}, {"id": "SP52F", "sport": "Pickleball", "position": "Senior recreational/competitive (female)", "category": "Individual racquet", "physical": {"heightMean": 165, "heightSD": 8, "weightMean": 65, "weightSD": 10, "bmiMean": 23.9, "bfMean": 26, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 6, "maxStrength": 4, "power": 6, "speed": 5, "endurance": 5, "flexibility": 6, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor / indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 6, "clubsPrevalent": "Growing"}, "sources": "S101", "notes": "Same broad body-type tolerance as the men's game. The sport rewards anyone \u2014 height, weight, age, and athleticism vary widely at competitive level.", "sex": "F"}, {"id": "SP53", "sport": "Arm wrestling", "position": "Senior competitive (male)", "category": "Strength individual", "physical": {"heightMean": 176, "heightSD": 8, "weightMean": 88, "weightSD": 15, "bmiMean": 28.4, "bfMean": 18, "wingspanRatio": 1, "sittingHeightRatio": null}, "demands": {"aerobic": 2, "anaerobic": 8, "maxStrength": 10, "power": 9, "speed": 3, "endurance": 3, "flexibility": 4, "coordination": 8, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S100", "notes": "Counter-intuitive body type \u2014 shorter forearm gives leverage advantage. Forearm girth, grip strength, and rotational power dominate. Limited peer-reviewed elite data; profile synthesised from biomechanics and combat-sport adjacencies. Lower-confidence entry.", "sex": "M"}, {"id": "SP53F", "sport": "Arm wrestling", "position": "Senior competitive (female)", "category": "Strength individual", "physical": {"heightMean": 165, "heightSD": 6, "weightMean": 68, "weightSD": 12, "bmiMean": 24.9, "bfMean": 24, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 2, "anaerobic": 8, "maxStrength": 9, "power": 9, "speed": 3, "endurance": 3, "flexibility": 4, "coordination": 8, "reaction": 6}, "categorical": {"teamSize": 1, "contact": "Heavy", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S100", "notes": "Same leverage-and-grip-strength profile as men's game, scaled. Few elite anthropometric studies exist for female arm wrestlers.", "sex": "F"}, {"id": "SP54", "sport": "Curling", "position": "Senior elite (male)", "category": "Team precision", "physical": {"heightMean": 181, "heightSD": 7, "weightMean": 86, "weightSD": 10, "bmiMean": 26.2, "bfMean": 18, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 7, "maxStrength": 5, "power": 5, "speed": 4, "endurance": 6, "flexibility": 7, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 4, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S102", "notes": "Broad body-type tolerance \u2014 precision, balance, sliding-leg flexibility, and anaerobic burst capacity (intense sweeping) matter more than mass or height. One of the few sports where being middle-aged is no disadvantage.", "sex": "M"}, {"id": "SP54F", "sport": "Curling", "position": "Senior elite (female)", "category": "Team precision", "physical": {"heightMean": 168, "heightSD": 6, "weightMean": 70, "weightSD": 8, "bmiMean": 24.8, "bfMean": 26, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 5, "anaerobic": 7, "maxStrength": 4, "power": 5, "speed": 4, "endurance": 6, "flexibility": 7, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 4, "contact": "None", "environment": "Indoor", "waterBased": "No", "equipmentCost": "Medium", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S102", "notes": "Same broad-tolerance profile as the men's game. Sweeping is the most physically demanding element; skip role allows lower physical demand.", "sex": "F"}, {"id": "SP55", "sport": "Surfing", "position": "Senior competitive (male)", "category": "Individual water", "physical": {"heightMean": 177, "heightSD": 5, "weightMean": 73, "weightSD": 6, "bmiMean": 23.3, "bfMean": 9, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 9, "maxStrength": 6, "power": 8, "speed": 5, "endurance": 7, "flexibility": 8, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "Medium", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S99", "notes": "Mesomorphic somatotype dominant. Paddle power (upper-body endurance) is the elite differentiator \u2014 competitors paddle 4-7 km per competition session. Lower-body explosiveness for the pop-up and balance for the ride.", "sex": "M"}, {"id": "SP55F", "sport": "Surfing", "position": "Senior competitive (female)", "category": "Individual water", "physical": {"heightMean": 165, "heightSD": 5, "weightMean": 60, "weightSD": 6, "bmiMean": 22, "bfMean": 18, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 7, "anaerobic": 9, "maxStrength": 5, "power": 8, "speed": 5, "endurance": 7, "flexibility": 8, "coordination": 9, "reaction": 9}, "categorical": {"teamSize": 1, "contact": "None", "environment": "Outdoor", "waterBased": "Yes", "equipmentCost": "Medium", "entryAge": "Any", "injuryRisk": "Medium"}, "ireland": {"accessibility": 2, "clubsPrevalent": "No"}, "sources": "S99", "notes": "Same mesomorphic-balanced profile as male competitors, scaled. Paddle-power demand and balance dominate; lower-body explosive power for take-off.", "sex": "F"}, {"id": "SP56", "sport": "Ultimate frisbee", "position": "Senior elite (male)", "category": "Team field", "physical": {"heightMean": 183, "heightSD": 7, "weightMean": 79, "weightSD": 7, "bmiMean": 23.6, "bfMean": 11, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 5, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 7, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Growing"}, "sources": "S103", "notes": "Sport-physiology profile sits between soccer and field hockey \u2014 endurance + sprint + jumping. Lower contact than rugby or GAA. Accessible entry sport; growing club presence in Ireland.", "sex": "M"}, {"id": "SP56F", "sport": "Ultimate frisbee", "position": "Senior elite (female)", "category": "Team field", "physical": {"heightMean": 170, "heightSD": 6, "weightMean": 65, "weightSD": 6, "bmiMean": 22.5, "bfMean": 20, "wingspanRatio": null, "sittingHeightRatio": null}, "demands": {"aerobic": 9, "anaerobic": 8, "maxStrength": 5, "power": 8, "speed": 8, "endurance": 9, "flexibility": 6, "coordination": 9, "reaction": 8}, "categorical": {"teamSize": 7, "contact": "None", "environment": "Outdoor", "waterBased": "No", "equipmentCost": "Low", "entryAge": "Any", "injuryRisk": "Low"}, "ireland": {"accessibility": 5, "clubsPrevalent": "Growing"}, "sources": "S103", "notes": "Mixed-gender at recreational levels is a feature of the sport. Senior elite female profile mirrors the men's, scaled.", "sex": "F"}];
+</script>
+<script>
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+const state = {
+  currentScreen: 'welcome',
+  questionIndex: 0,
+  answers: {
+    sex: null,
+    height: 175,
+    weight: 75,
+    wingspan: 175,
+    bodyFat: 18,
+    archetype: null,
+    sportsEnjoyed: [],
+    experience: null,
+    teamSolo: null,
+    outdoor: null,
+    contact: null,
+    water: null,
+    budget: null,
+    ireland: null,
+  },
+  results: {
+    builtfor: [],
+    enjoy: [],
+    overall: [],
+  },
+  currentTab: 'overall',
+};
+
+/* ============================================================
+   QUESTION FLOW
+   Each step is a card with the question + how it captures the answer
+   ============================================================ */
+
+const questions = [
+  {
+    id: 'sex',
+    eyebrow: '01 — REFERENCE',
+    question: 'Sex assigned at birth?',
+    help: 'Used to match against male or female elite-athlete profiles, since the science is sex-specific. This isn\'t a question about your identity.',
+    type: 'choice',
+    options: [
+      { label: 'Male', value: 'M' },
+      { label: 'Female', value: 'F' },
+    ],
+  },
+  {
+    id: 'body',
+    eyebrow: '02 — BODY',
+    question: 'Your body, in three numbers.',
+    help: 'Be honest. The model handles all body types — accuracy beats vanity.',
+    type: 'multi-slider',
+    sliders: [
+      { id: 'height', label: 'HEIGHT', unit: 'CM', min: 140, max: 220, step: 1, default: 175 },
+      { id: 'weight', label: 'WEIGHT', unit: 'KG', min: 40, max: 180, step: 1, default: 75 },
+      { id: 'wingspan', label: 'ARM SPAN', unit: 'CM', min: 140, max: 230, step: 1, default: 175, help: 'Fingertip to fingertip. If unsure, use your height.' },
+    ],
+  },
+  {
+    id: 'bodyFat',
+    eyebrow: '03 — COMPOSITION',
+    question: 'Body fat percentage?',
+    help: 'Best estimate. Athletic males 8–15%, athletic females 16–24%. Visual estimate is fine.',
+    type: 'slider',
+    min: 4, max: 40, step: 1, unit: '%',
+  },
+  {
+    id: 'archetype',
+    eyebrow: '04 — FITNESS',
+    question: 'Where does your fitness sit?',
+    help: 'Pick the one that fits best. Some overlap is fine.',
+    type: 'archetype',
+    options: [
+      {
+        value: 'endurance',
+        label: 'ENDURANCE',
+        sub: 'Long, steady efforts. Running, cycling, hiking.',
+      },
+      {
+        value: 'strength',
+        label: 'STRENGTH',
+        sub: 'Heavy lifts. Built for power production.',
+      },
+      {
+        value: 'explosive',
+        label: 'EXPLOSIVE',
+        sub: 'Sprinting, jumping, fast and short.',
+      },
+      {
+        value: 'skill',
+        label: 'SKILL / COORDINATION',
+        sub: 'Precision, technique, reaction time.',
+      },
+      {
+        value: 'balanced',
+        label: 'BALANCED',
+        sub: 'No strong lean — decent at most things.',
+      },
+      {
+        value: 'untrained',
+        label: 'NEW TO TRAINING',
+        sub: 'Honest baseline. Most people are here.',
+      },
+    ],
+  },
+  {
+    id: 'sportsEnjoyed',
+    eyebrow: '05 — HISTORY',
+    question: 'Sports you\'ve genuinely enjoyed?',
+    help: 'Pick as many as apply. Skip if none. Boosts recommendations in similar categories.',
+    type: 'multi-select',
+    options: [
+      { label: 'Team field (GAA, soccer, rugby, hockey)', value: 'team_field' },
+      { label: 'Team court (basketball, volleyball, netball)', value: 'team_court' },
+      { label: 'Racquet sports (tennis, badminton, squash)', value: 'racquet' },
+      { label: 'Combat / martial arts', value: 'combat' },
+      { label: 'Water sports (swimming, surfing, sailing)', value: 'water' },
+      { label: 'Endurance (running, cycling, triathlon)', value: 'endurance' },
+      { label: 'Strength / lifting', value: 'strength' },
+      { label: 'Technical / skill (climbing, gymnastics, dance)', value: 'technical' },
+    ],
+  },
+  {
+    id: 'experience',
+    eyebrow: '06 — EXPERIENCE',
+    question: 'Longest you\'ve competed seriously?',
+    help: 'In any one sport, at any level above casual play.',
+    type: 'choice',
+    options: [
+      { label: 'Never competed', value: 'none' },
+      { label: 'Under 2 years', value: 'short' },
+      { label: '2 to 5 years', value: 'medium' },
+      { label: 'Over 5 years', value: 'long' },
+    ],
+  },
+  {
+    id: 'teamSolo',
+    eyebrow: '07 — STYLE',
+    question: 'Team or solo?',
+    help: 'Some thrive in a team. Some need to be alone with the work.',
+    type: 'choice',
+    options: [
+      { label: 'Team', value: 'Team' },
+      { label: 'Solo', value: 'Solo' },
+      { label: 'Either', value: 'Either' },
+    ],
+  },
+  {
+    id: 'outdoor',
+    eyebrow: '08 — ENVIRONMENT',
+    question: 'How important is being outdoors?',
+    help: 'Drives whether outdoor sports get a big boost or just a small one.',
+    type: 'choice',
+    options: [
+      { label: 'Essential — must be outside', value: 'essential' },
+      { label: 'Nice to have', value: 'nice' },
+      { label: 'No strong preference', value: 'neutral' },
+      { label: 'Prefer indoor', value: 'indoor' },
+    ],
+  },
+  {
+    id: 'contact',
+    eyebrow: '09 — CONTACT',
+    question: 'Maximum contact you\'ll tolerate?',
+    help: 'How much physical contact you\'re happy with in a sport.',
+    type: 'choice',
+    options: [
+      { label: 'None — no contact', value: 'None' },
+      { label: 'Light — incidental', value: 'Light' },
+      { label: 'Medium — like GAA', value: 'Medium' },
+      { label: 'Heavy — like rugby', value: 'Heavy' },
+    ],
+  },
+  {
+    id: 'water',
+    eyebrow: '10 — WATER',
+    question: 'Comfortable in water?',
+    help: 'If no, we\'ll exclude all water-based sports from your results.',
+    type: 'choice',
+    options: [
+      { label: 'Yes', value: 'Yes' },
+      { label: 'No', value: 'No' },
+    ],
+  },
+  {
+    id: 'logistics',
+    eyebrow: '11 — LOGISTICS',
+    question: 'Budget & location?',
+    help: 'Equipment budget to start, and whether Ireland-accessibility matters.',
+    type: 'compound-choice',
+    parts: [
+      {
+        id: 'budget',
+        label: 'BUDGET TO START',
+        options: [
+          { label: 'Low (<\u20ac200)', value: 'Low' },
+          { label: 'Medium (\u20ac200\u20131000)', value: 'Medium' },
+          { label: 'High (>\u20ac1000)', value: 'High' },
+        ],
+      },
+      {
+        id: 'ireland',
+        label: 'BASED IN IRELAND?',
+        options: [
+          { label: 'Yes', value: 'Yes' },
+          { label: 'No', value: 'No' },
+        ],
+      },
+    ],
+  },
+];
+
+/* ============================================================
+   ARCHETYPE → DEMAND PROFILE MAPPING
+   The old quiz asked 8 separate 1-10 ratings. The new flow asks one archetype
+   question and maps it to a demand profile. The values are calibrated so a
+   typical user of each archetype matches the sports that suit them and gets
+   penalised for sports that need very different attributes.
+   ============================================================ */
+const ARCHETYPE_PROFILES = {
+  endurance:  { aerobic: 9, anaerobic: 7, maxStrength: 4, power: 5, speed: 6, flexibility: 5, coordination: 6, reaction: 5 },
+  strength:   { aerobic: 4, anaerobic: 6, maxStrength: 9, power: 8, speed: 4, flexibility: 4, coordination: 5, reaction: 5 },
+  explosive:  { aerobic: 5, anaerobic: 9, maxStrength: 7, power: 9, speed: 9, flexibility: 6, coordination: 7, reaction: 8 },
+  skill:      { aerobic: 6, anaerobic: 6, maxStrength: 5, power: 6, speed: 6, flexibility: 7, coordination: 9, reaction: 9 },
+  balanced:   { aerobic: 6, anaerobic: 6, maxStrength: 6, power: 6, speed: 6, flexibility: 6, coordination: 6, reaction: 6 },
+  untrained:  { aerobic: 4, anaerobic: 4, maxStrength: 4, power: 4, speed: 4, flexibility: 4, coordination: 5, reaction: 5 },
+};
+
+/* Map sport categories to the "sports enjoyed" multi-select buckets,
+   so liking, say, rugby gives a boost to other team field sports. */
+const SPORT_CATEGORY_BUCKET = {
+  'Team field':              'team_field',
+  'Team field contact':      'team_field',
+  'Team field stick':        'team_field',
+  'Team court':              'team_court',
+  'Team court contact':      'team_court',
+  'Individual racquet':      'racquet',
+  'Combat striking':         'combat',
+  'Combat grappling':        'combat',
+  'Combat mixed':            'combat',
+  'Team water contact':      'water',
+  'Individual water':        'water',
+  'Endurance individual':    'endurance',
+  'Endurance individual / pursuit': 'endurance',
+  'Endurance team / pair':   'endurance',
+  'Endurance multi':         'endurance',
+  'Strength individual':     'strength',
+  'Power-throw individual':  'strength',
+  'Individual technical':    'technical',
+  'Individual aesthetic':    'technical',
+  'Individual power-speed':  'explosive_cat',
+  'Power-jump individual':   'explosive_cat',
+  'Power-skill individual':  'explosive_cat',
+  'Team precision':          'technical',
+};
+
+/* ============================================================
+   SCREEN NAVIGATION
+   ============================================================ */
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+  state.currentScreen = id;
+}
+
+function startQuiz() {
+  state.questionIndex = 0;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+
+/* ============================================================
+   QUESTION RENDERING
+   ============================================================ */
+
+function renderQuestion() {
+  const idx = state.questionIndex;
+  const stack = document.getElementById('card-stack');
+  stack.innerHTML = '';
+
+  if (idx >= questions.length) {
+    runScoring();
+    return;
+  }
+
+  const q = questions[idx];
+  document.getElementById('step-counter').textContent =
+    String(idx + 1).padStart(2, '0') + ' / ' + String(questions.length).padStart(2, '0');
+  document.getElementById('progress-fill').style.width = ((idx + 1) / questions.length * 100) + '%';
+
+  const card = document.createElement('div');
+  card.className = 'q-card';
+
+  let bodyHtml = '<p class="eyebrow">' + q.eyebrow + '</p>' +
+                 '<h2 class="question">' + q.question + '</h2>' +
+                 '<p class="help">' + q.help + '</p>';
+
+  if (q.type === 'slider') {
+    const initial = state.answers[q.id] || ((q.min + q.max) / 2 | 0);
+    state.answers[q.id] = initial;
+    bodyHtml +=
+      '<div class="slider-block">' +
+        '<div>' +
+          '<div class="value" id="slider-val">' + initial + '</div>' +
+          '<div class="unit">' + q.unit + '</div>' +
+        '</div>' +
+        '<input type="range" min="' + q.min + '" max="' + q.max + '" step="' + q.step + '" value="' + initial + '" id="slider-input">' +
+        '<div class="slider-row"><span>' + q.min + '</span><span>' + q.max + '</span></div>' +
+      '</div>' +
+      '<button class="btn" style="margin-top: 24px;" onclick="confirmAnswer()">CONFIRM</button>';
+
+  } else if (q.type === 'multi-slider') {
+    // 3 stacked sliders on one card
+    bodyHtml += '<div class="multi-slider">';
+    q.sliders.forEach(function(s) {
+      const initial = state.answers[s.id] || s.default;
+      state.answers[s.id] = initial;
+      bodyHtml +=
+        '<div class="multi-slider-row">' +
+          '<div class="multi-slider-head">' +
+            '<span class="multi-slider-label">' + s.label + '</span>' +
+            '<span class="multi-slider-value" id="ms-val-' + s.id + '">' + initial + ' <em>' + s.unit + '</em></span>' +
+          '</div>' +
+          '<input type="range" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '" value="' + initial + '" data-msid="' + s.id + '" class="multi-slider-input">' +
+          (s.help ? '<p class="multi-slider-help">' + s.help + '</p>' : '') +
+        '</div>';
+    });
+    bodyHtml += '</div>';
+    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM</button>';
+
+  } else if (q.type === 'choice') {
+    bodyHtml += '<div class="options">';
+    q.options.forEach(function(o) {
+      const selected = state.answers[q.id] === o.value ? ' selected' : '';
+      bodyHtml +=
+        '<button class="option' + selected + '" onclick="selectChoice(\'' + o.value + '\')">' +
+          '<span>' + o.label + '</span><span class="arrow">→</span>' +
+        '</button>';
+    });
+    bodyHtml += '</div>';
+
+  } else if (q.type === 'archetype') {
+    // Same visual treatment as choice but with a subtitle on each card
+    bodyHtml += '<div class="options archetype-options">';
+    q.options.forEach(function(o) {
+      const selected = state.answers[q.id] === o.value ? ' selected' : '';
+      bodyHtml +=
+        '<button class="option archetype-option' + selected + '" onclick="selectChoice(\'' + o.value + '\')">' +
+          '<div class="archetype-text">' +
+            '<span class="archetype-label">' + o.label + '</span>' +
+            '<span class="archetype-sub">' + o.sub + '</span>' +
+          '</div>' +
+          '<span class="arrow">→</span>' +
+        '</button>';
+    });
+    bodyHtml += '</div>';
+
+  } else if (q.type === 'multi-select') {
+    if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
+    bodyHtml += '<div class="options">';
+    q.options.forEach(function(o) {
+      const isSel = state.answers[q.id].indexOf(o.value) !== -1;
+      bodyHtml +=
+        '<button class="option multi-option' + (isSel ? ' selected' : '') + '" onclick="toggleMulti(\'' + o.value + '\')" data-val="' + o.value + '">' +
+          '<span>' + o.label + '</span>' +
+          '<span class="multi-check">' + (isSel ? '✓' : '+') + '</span>' +
+        '</button>';
+    });
+    bodyHtml += '</div>';
+    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM</button>';
+
+  } else if (q.type === 'compound-choice') {
+    // Multiple sub-questions on one card
+    bodyHtml += '<div class="compound">';
+    q.parts.forEach(function(part) {
+      bodyHtml += '<div class="compound-part">';
+      bodyHtml += '<p class="compound-label">' + part.label + '</p>';
+      bodyHtml += '<div class="options compound-options">';
+      part.options.forEach(function(o) {
+        const isSel = state.answers[part.id] === o.value;
+        bodyHtml +=
+          '<button class="option compound-option' + (isSel ? ' selected' : '') + '" onclick="selectCompound(\'' + part.id + '\',\'' + o.value + '\')" data-partid="' + part.id + '" data-val="' + o.value + '">' +
+            '<span>' + o.label + '</span>' +
+          '</button>';
+      });
+      bodyHtml += '</div></div>';
+    });
+    bodyHtml += '</div>';
+    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM &amp; SEE YOUR DECK</button>';
+  }
+
+  card.innerHTML = bodyHtml;
+  stack.appendChild(card);
+
+  // Slider live updates
+  const slider = card.querySelector('#slider-input');
+  if (slider) {
+    slider.addEventListener('input', function(e) {
+      const v = +e.target.value;
+      state.answers[q.id] = v;
+      const valEl = card.querySelector('#slider-val');
+      if (valEl) valEl.textContent = v;
+    });
+  }
+  const multiSliders = card.querySelectorAll('.multi-slider-input');
+  multiSliders.forEach(function(input) {
+    input.addEventListener('input', function(e) {
+      const id = e.target.dataset.msid;
+      const v = +e.target.value;
+      state.answers[id] = v;
+      const out = card.querySelector('#ms-val-' + id);
+      if (out) {
+        const unitMatch = out.querySelector('em');
+        const unit = unitMatch ? unitMatch.textContent : '';
+        out.innerHTML = v + ' <em>' + unit + '</em>';
+      }
+    });
+  });
+
+  // Show the scroll hint on the very first card only
+  if (idx === 0 && !hasSeenScrollHint()) {
+    showScrollHint();
+  }
+
+  // Wire vertical scroll gestures
+  enableScroll(card);
+}
+
+function selectChoice(value) {
+  const q = questions[state.questionIndex];
+  state.answers[q.id] = value;
+  // Brief selected-state flash then advance
+  const card = document.querySelector('.q-card');
+  if (card) {
+    const buttons = card.querySelectorAll('.option');
+    buttons.forEach(function(b) { b.classList.remove('selected'); });
+    buttons.forEach(function(b) {
+      if (b.dataset.val === value ||
+          (b.textContent.trim().toLowerCase().indexOf(value.toLowerCase()) === 0) ||
+          (q.options && q.options.find(function(o) { return o.value === value && b.textContent.indexOf(o.label) !== -1; }))) {
+        b.classList.add('selected');
+      }
+    });
+  }
+  setTimeout(function() { confirmAnswer(); }, 200);
+}
+
+function toggleMulti(value) {
+  const q = questions[state.questionIndex];
+  if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
+  const arr = state.answers[q.id];
+  const i = arr.indexOf(value);
+  if (i === -1) arr.push(value); else arr.splice(i, 1);
+  // Update the button visually
+  const btn = document.querySelector('.multi-option[data-val="' + value + '"]');
+  if (btn) {
+    btn.classList.toggle('selected');
+    const check = btn.querySelector('.multi-check');
+    if (check) check.textContent = btn.classList.contains('selected') ? '✓' : '+';
+  }
+}
+
+function selectCompound(partId, value) {
+  state.answers[partId] = value;
+  const card = document.querySelector('.q-card');
+  if (!card) return;
+  // Highlight selected option within this part only
+  card.querySelectorAll('.compound-option[data-partid="' + partId + '"]').forEach(function(b) {
+    b.classList.toggle('selected', b.dataset.val === value);
+  });
+}
+
+function selectScale(n) {
+  const q = questions[state.questionIndex];
+  state.answers[q.id] = n;
+  document.querySelectorAll('.scale-chip').forEach(c => c.classList.remove('selected'));
+  const chip = document.querySelector(`.scale-chip[data-val="${n}"]`);
+  if (chip) chip.classList.add('selected');
+}
+
+function confirmAnswer() {
+  const card = document.querySelector('.q-card');
+  if (!card) return;
+  // For the wingspan question, sync default to height if user left at default
+  card.classList.add('gone-up');
+  setTimeout(() => {
+    state.questionIndex++;
+    renderQuestion();
+  }, 300);
+}
+
+function previousQuestion() {
+  if (state.questionIndex === 0) return;
+  const card = document.querySelector('.q-card');
+  if (card) {
+    card.classList.add('gone-right');
+    setTimeout(() => {
+      state.questionIndex--;
+      renderQuestion();
+    }, 300);
+  }
+}
+
+/* ============================================================
+   GESTURES — pure vertical scroll
+   Swipe up = next, swipe down = back. TikTok/Reels pattern.
+   ============================================================ */
+function enableScroll(card) {
+  let startY = 0, currentY = 0;
+  let dragging = false;
+
+  function onStart(e) {
+    // Don't start a drag on inputs/buttons — they need their own touch behaviour
+    if (e.target.closest('button, input, .scale-chip, .multi-option, .compound-option, .archetype-option')) return;
+    dragging = true;
+    card.classList.add('dragging');
+    const p = e.touches ? e.touches[0] : e;
+    startY = p.clientY;
+    currentY = 0;
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const p = e.touches ? e.touches[0] : e;
+    currentY = p.clientY - startY;
+    // Reduce movement amplitude (rubber-band feel) — translate at 60% of finger travel
+    const eased = currentY * 0.6;
+    card.style.transform = 'translateY(' + eased + 'px)';
+    // Once the user has scrolled, dismiss the hint
+    if (Math.abs(currentY) > 12) hideScrollHint();
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    card.classList.remove('dragging');
+    card.style.transform = '';
+    const threshold = 60;
+    if (currentY < -threshold) {
+      confirmAnswer();
+    } else if (currentY > threshold) {
+      previousQuestion();
+    }
+    currentY = 0;
+  }
+
+  card.addEventListener('touchstart', onStart, { passive: true });
+  card.addEventListener('touchmove', onMove, { passive: true });
+  card.addEventListener('touchend', onEnd);
+  card.addEventListener('mousedown', onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+
+  // Wheel support for desktop
+  card.addEventListener('wheel', function(e) {
+    if (Math.abs(e.deltaY) < 30) return;
+    if (e.deltaY > 0) confirmAnswer();
+    else previousQuestion();
+  }, { passive: true });
+}
+
+/* ============================================================
+   SCROLL HINT — animated chevron pulses on the first card
+   ============================================================ */
+const SCROLL_HINT_FLAG = 'builtfor_scroll_hint_seen';
+
+function hasSeenScrollHint() {
+  try { return localStorage.getItem(SCROLL_HINT_FLAG) === '1'; } catch (e) { return false; }
+}
+
+function showScrollHint() {
+  const hint = document.getElementById('scroll-hint');
+  if (hint) hint.classList.add('active');
+}
+
+function hideScrollHint() {
+  const hint = document.getElementById('scroll-hint');
+  if (hint && hint.classList.contains('active')) {
+    hint.classList.remove('active');
+    try { localStorage.setItem(SCROLL_HINT_FLAG, '1'); } catch (e) {}
+  }
+}
+
+
+/* ============================================================
+   SCORING ENGINE
+   Direct JavaScript port of the v1.3 Excel formulas
+   ============================================================ */
+
+function computeBuiltFor(user, sport) {
+  // Same-sex filter (hard exclusion)
+  if (user.sex !== sport.sex) return 0;
+
+  const p = sport.physical;
+
+  // Height fit
+  let heightFit = 0.5;
+  if (p.heightMean !== null && p.heightMean !== undefined) {
+    if (p.heightSD) {
+      const overshoot = Math.max(0, Math.abs(user.height - p.heightMean) - p.heightSD);
+      heightFit = Math.max(0, 1 - overshoot / p.heightSD / 3);
+    } else {
+      heightFit = Math.max(0, 1 - Math.abs(user.height - p.heightMean) / (p.heightMean * 0.1) / 3);
+    }
+  }
+
+  // Weight fit
+  let weightFit = 0.5;
+  if (p.weightMean !== null && p.weightMean !== undefined) {
+    if (p.weightSD) {
+      const overshoot = Math.max(0, Math.abs(user.weight - p.weightMean) - p.weightSD);
+      weightFit = Math.max(0, 1 - overshoot / p.weightSD / 3);
+    } else {
+      weightFit = Math.max(0, 1 - Math.abs(user.weight - p.weightMean) / (p.weightMean * 0.15) / 3);
+    }
+  }
+
+  // Body fat fit
+  let bfFit = 0.5;
+  if (p.bfMean !== null && p.bfMean !== undefined) {
+    bfFit = Math.max(0, 1 - Math.abs(user.bodyFat - p.bfMean) / 5 / 3);
+  }
+
+  // Wingspan/height ratio fit
+  let wingspanFit = (heightFit + weightFit + bfFit) / 3;  // fallback
+  if (p.wingspanRatio) {
+    const userRatio = user.wingspan / user.height;
+    wingspanFit = Math.max(0, 1 - Math.abs(userRatio - p.wingspanRatio) / 0.03 / 3);
+  }
+
+  // Demand profile fit — ASYMMETRIC penalty:
+  //   Under-qualified (user < sport demand): full penalty (dem - usr)
+  //   Over-qualified  (user > sport demand): half penalty 0.5 × (usr - dem)
+  // Previous version only penalised under-qualification, which led to sports
+  // with low demand profiles (e.g. distance running) ranking high for users
+  // who clearly don't fit them. Over-qualification is genuinely less bad than
+  // under-qualification (you can still do the sport, just over-built for it),
+  // hence the 0.5× weight rather than full symmetry.
+  // Derive user's demand profile from their selected archetype
+  const archetype = ARCHETYPE_PROFILES[user.archetype] || ARCHETYPE_PROFILES.balanced;
+  const d = sport.demands;
+  const demandPairs = [
+    [d.aerobic, archetype.aerobic],
+    [d.anaerobic, archetype.anaerobic],
+    [d.maxStrength, archetype.maxStrength],
+    [d.power, archetype.power],
+    [d.speed, archetype.speed],
+    [d.flexibility, archetype.flexibility],
+    [d.coordination, archetype.coordination],
+    [d.reaction, archetype.reaction],
+  ];
+  const totalGap = demandPairs.reduce((sum, [dem, usr]) => {
+    const dm = dem || 0;
+    const us = usr || 0;
+    if (us < dm) {
+      return sum + (dm - us);          // under: full penalty
+    } else {
+      return sum + 0.5 * (us - dm);    // over: half penalty
+    }
+  }, 0);
+  const demandFit = 100 * Math.max(0, 1 - totalGap / 40);
+
+  // Composite: physical 60% (averaged across 4 dims), demand 40%
+  const physicalAvg = (heightFit + weightFit + bfFit + wingspanFit) / 4;
+  const score = 60 * physicalAvg + 0.4 * demandFit;
+
+  return Math.round(score * 10) / 10;
+}
+
+function computeEnjoyment(user, sport) {
+  // Sex filter (hard exclusion)
+  if (user.sex !== sport.sex) return 0;
+
+  // Water filter (hard exclusion)
+  if (user.water === 'No' && sport.categorical.waterBased === 'Yes') return 0;
+
+  const c = sport.categorical;
+
+  // Team/solo
+  let teamSolo;
+  const teamFit = (c.teamSize >= 4) ? 1 : 0.3;
+  const soloFit = (c.teamSize <= 2 || (sport.category && sport.category.includes('Individual'))) ? 1 : 0.3;
+  if (user.teamSolo === 'Either') {
+    teamSolo = (teamFit + soloFit) / 2;
+  } else if (user.teamSolo === 'Team') {
+    teamSolo = teamFit;
+  } else {
+    teamSolo = soloFit;
+  }
+
+  // Contact
+  const contactMap = { 'None': 0, 'Light': 1, 'Medium': 2, 'Heavy': 3 };
+  const sportContact = contactMap[c.contact] ?? 0;
+  const userContact = contactMap[user.contact] ?? 3;
+  let contactMatch = 1;
+  if (sportContact > userContact) {
+    contactMatch = Math.max(0, 1 - 0.4 * (sportContact - userContact));
+  }
+
+  // Environment — driven by the new "outdoor importance" question
+  // user.outdoor: 'essential' | 'nice' | 'neutral' | 'indoor'
+  let envMatch = 1;
+  const sportEnv = (c.environment || '').toLowerCase();
+  const isOutdoor = sportEnv.indexOf('outdoor') !== -1;
+  const isIndoor  = sportEnv.indexOf('indoor')  !== -1;
+  const hasBoth   = isOutdoor && isIndoor;
+  if (user.outdoor === 'essential') {
+    envMatch = isOutdoor ? 1 : (hasBoth ? 0.7 : 0.3);
+  } else if (user.outdoor === 'nice') {
+    envMatch = isOutdoor ? 1 : (hasBoth ? 0.85 : 0.65);
+  } else if (user.outdoor === 'indoor') {
+    envMatch = isIndoor ? 1 : (hasBoth ? 0.7 : 0.4);
+  } else {
+    envMatch = 1; // neutral
+  }
+
+  // Budget
+  const budgetMap = { 'Low': 1, 'Medium': 2, 'High': 3 };
+  const sportBudget = budgetMap[c.equipmentCost] ?? 2;
+  const userBudget = budgetMap[user.budget] ?? 2;
+  let budgetMatch = 1;
+  if (sportBudget > userBudget) {
+    budgetMatch = Math.max(0, 1 - 0.4 * (sportBudget - userBudget));
+  }
+
+  // Ireland
+  let irelandFit = 1;
+  if (user.ireland === 'Yes') {
+    irelandFit = (typeof sport.ireland.accessibility === 'number') ? sport.ireland.accessibility / 10 : 0.5;
+  }
+
+  // Sports-enjoyed boost: if the user picked categories they've enjoyed, sports
+  // mapped to those categories get a multiplicative bonus on enjoyment.
+  // Caps at 1.15x (so a "perfect category match" lifts an 80 to 92, never breaks 100).
+  let categoryBoost = 1.0;
+  if (Array.isArray(user.sportsEnjoyed) && user.sportsEnjoyed.length > 0) {
+    const bucket = SPORT_CATEGORY_BUCKET[sport.category];
+    if (bucket && user.sportsEnjoyed.indexOf(bucket) !== -1) {
+      categoryBoost = 1.15;
+    }
+  }
+
+  // Experience penalty — if the user has never competed seriously, sports
+  // with a typical entry-age window that's already closed get a small penalty.
+  // Specifically, sports requiring early specialisation (gymnastics, diving,
+  // some throws) become unrealistic to enter as an adult beginner.
+  let experienceFit = 1.0;
+  if (user.experience === 'none') {
+    const entryAge = (sport.categorical.entryAge || '').toString();
+    // If the entry-age window starts in childhood AND maxes out before adulthood
+    // (i.e. has '-' and the latter number is <= 16), penalise it
+    const match = entryAge.match(/(\d+)\s*[\-\u2013]\s*(\d+)/);
+    if (match) {
+      const maxEntry = parseInt(match[2], 10);
+      if (maxEntry && maxEntry <= 14) experienceFit = 0.7;
+    }
+  }
+
+  // Weighted sum (sex match is just the gate at the top — full credit once passed)
+  const baseScore = 100 * (
+    0.10 +
+    teamSolo * 0.20 +
+    contactMatch * 0.20 +
+    envMatch * 0.10 +
+    budgetMatch * 0.15 +
+    irelandFit * 0.25
+  );
+
+  const finalScore = baseScore * categoryBoost * experienceFit;
+  return Math.round(Math.min(100, finalScore) * 10) / 10;
+}
+
+function runScoring() {
+  showScreen('computing');
+  const status = document.getElementById('compute-status');
+
+  const stages = [
+    'checking 78 sports...',
+    'measuring against elite anthropometrics...',
+    'weighing your preferences...',
+    'sorting your deck...',
+  ];
+
+  let stageIdx = 0;
+  const interval = setInterval(() => {
+    stageIdx++;
+    if (stageIdx < stages.length) {
+      status.textContent = stages[stageIdx];
+    } else {
+      clearInterval(interval);
+    }
+  }, 600);
+
+  setTimeout(() => {
+    // Compute scores
+    const scored = SPORTS_DATA.map(sport => {
+      const builtFor = computeBuiltFor(state.answers, sport);
+      const enjoyment = computeEnjoyment(state.answers, sport);
+      const total = (enjoyment === 0) ? 0 : Math.round((0.5 * builtFor + 0.5 * enjoyment) * 10) / 10;
+      return { sport, builtFor, enjoyment, total };
+    });
+
+    state.results.overall = [...scored].sort((a, b) => b.total - a.total).slice(0, 15);
+    state.results.builtfor = [...scored].filter(s => s.enjoyment > 0).sort((a, b) => b.builtFor - a.builtFor).slice(0, 15);
+    state.results.enjoy = [...scored].filter(s => s.enjoyment > 0).sort((a, b) => b.enjoyment - a.enjoyment).slice(0, 15);
+
+    saveProgress();
+    renderResults();
+    showScreen('results');
+  }, 2400);
+}
+
+/* ============================================================
+   RESULTS RENDERING
+   ============================================================ */
+
+function tierForScore(score) {
+  if (score >= 85) return 'diamond';
+  if (score >= 75) return 'gold';
+  if (score >= 60) return 'silver';
+  return 'bronze';
+}
+
+function renderResults() {
+  document.getElementById('count-overall').textContent = state.results.overall.length;
+  document.getElementById('count-builtfor').textContent = state.results.builtfor.length;
+  document.getElementById('count-enjoy').textContent = state.results.enjoy.length;
+  document.getElementById('results-meta').textContent = `${SPORTS_DATA.length} ANALYSED`;
+
+  renderTab(state.currentTab);
+
+  // Wire tabs
+  document.querySelectorAll('.tier-tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.tier-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      state.currentTab = tab.dataset.tab;
+      renderTab(state.currentTab);
+      saveProgress();
+    };
+  });
+}
+
+function renderTab(tab) {
+  const scroll = document.getElementById('deck-scroll');
+  const results = state.results[tab] || [];
+
+  if (results.length === 0 || results[0].total === 0 && tab === 'overall') {
+    scroll.innerHTML = `
+      <div class="empty-state">
+        <h2 class="display">No matches.</h2>
+        <p>Your filters excluded every sport. Try loosening "water" or "team/solo".</p>
+        <button class="btn ghost" onclick="restartQuiz()">RESTART</button>
+      </div>`;
+    return;
+  }
+
+  const primaryKey = tab === 'builtfor' ? 'builtFor' : (tab === 'enjoy' ? 'enjoyment' : 'total');
+  const primaryLabel = tab === 'builtfor' ? 'BUILT-FOR' : (tab === 'enjoy' ? 'ENJOYMENT' : 'OVERALL');
+
+  scroll.innerHTML = results.slice(0, 15).map((r, i) => {
+    const score = r[primaryKey];
+    const tier = tierForScore(score);
+    const sportName = r.sport.sport;
+    const position = r.sport.position;
+    const d = r.sport.demands;
+
+    // Pick the 3 highest demands to show as "stats" on the card
+    const demandsArr = [
+      ['AERO', d.aerobic],
+      ['ANAER', d.anaerobic],
+      ['STREN', d.maxStrength],
+      ['POWER', d.power],
+      ['SPEED', d.speed],
+      ['FLEX', d.flexibility],
+      ['SKILL', d.coordination],
+      ['REACT', d.reaction],
+    ].sort((a, b) => (b[1] || 0) - (a[1] || 0));
+    const topStats = demandsArr.slice(0, 6);
+
+    return `
+      <div class="athlete-card tier-${tier}" onclick="openDetail(${i}, '${tab}')">
+        <div class="card-inner">
+          <div class="card-top">
+            <div class="card-rank">${String(i + 1).padStart(2, '0')}</div>
+            <div class="card-tier-badge tier-${tier}">${tier}</div>
+          </div>
+          <div class="card-score">${Math.round(score)}</div>
+          <div class="card-score-label">${primaryLabel} SCORE</div>
+          <div class="card-sport">${sportName}</div>
+          <div class="card-position">${position || ''}</div>
+          <div class="card-stats">
+            ${topStats.map(([k, v]) => `
+              <div class="stat">
+                <div class="stat-val">${v || '–'}</div>
+                <div class="stat-key">${k}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============================================================
+   CARD DETAIL
+   ============================================================ */
+
+function openDetail(idx, tab) {
+  const result = state.results[tab][idx];
+  if (!result) return;
+
+  const { sport, builtFor, enjoyment, total } = result;
+  const tier = tierForScore(tab === 'builtfor' ? builtFor : (tab === 'enjoy' ? enjoyment : total));
+
+  // Per-sport hand-authored elite comparison
+  const p = sport.physical;
+  const comparable = ELITE_COMPARISONS[sport.id] || '';
+
+  // Demand bars with user's value overlaid
+  const demandLabels = [
+    ['Aerobic', 'aerobic'],
+    ['Anaerobic', 'anaerobic'],
+    ['Max strength', 'maxStrength'],
+    ['Power', 'power'],
+    ['Speed', 'speed'],
+    ['Flexibility', 'flexibility'],
+    ['Coordination', 'coordination'],
+    ['Reaction', 'reaction'],
+  ];
+
+  const demandsHtml = demandLabels.map(([label, key]) => {
+    const sportVal = sport.demands[key] || 0;
+    const userVal = state.answers[key] || 0;
+    const gap = userVal - sportVal;
+    let gapTag = '';
+    if (sportVal === 0) {
+      gapTag = '';
+    } else if (Math.abs(gap) <= 1) {
+      gapTag = '<span class="gap-tag match">MATCH</span>';
+    } else if (gap > 1) {
+      gapTag = `<span class="gap-tag over">+${gap} OVER</span>`;
+    } else {
+      gapTag = `<span class="gap-tag under">${gap} UNDER</span>`;
+    }
+    return `
+      <div class="demand-bar-row">
+        <div class="lbl">
+          <span class="name">${label}</span>
+          ${gapTag}
+        </div>
+        <div class="demand-stack">
+          <div class="demand-bar-paired sport">
+            <span class="key">SPORT</span>
+            <span class="track"><span class="fill" style="width: ${sportVal * 10}%"></span></span>
+            <span class="val">${sportVal}</span>
+          </div>
+          <div class="demand-bar-paired user">
+            <span class="key">YOU</span>
+            <span class="track"><span class="fill" style="width: ${userVal * 10}%"></span></span>
+            <span class="val">${userVal}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const body = document.getElementById('detail-body');
+  body.innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-tier-strip tier-${tier}" style="background: var(--tier-${tier});"></div>
+      <div class="detail-rank-row">
+        <span class="num">#${idx + 1}</span>
+        <span>${tier.toUpperCase()} TIER</span>
+        <span style="margin-left:auto;color:var(--accent-hot)">●</span>
+      </div>
+      <h2 class="detail-sport-name">${sport.sport}</h2>
+      <p class="detail-position">${sport.position || ''}</p>
+    </div>
+
+    <div class="detail-scores">
+      <div class="detail-score ${tab === 'overall' ? 'primary' : ''}">
+        <div class="val">${Math.round(total)}</div>
+        <div class="lbl">OVERALL</div>
+      </div>
+      <div class="detail-score ${tab === 'builtfor' ? 'primary' : ''}">
+        <div class="val">${Math.round(builtFor)}</div>
+        <div class="lbl">BUILT FOR</div>
+      </div>
+      <div class="detail-score ${tab === 'enjoy' ? 'primary' : ''}">
+        <div class="val">${Math.round(enjoyment)}</div>
+        <div class="lbl">ENJOYMENT</div>
+      </div>
+    </div>
+
+    ${comparable ? `
+    <div class="detail-section">
+      <div class="detail-section-title">— ELITE COMPARISON</div>
+      <div class="detail-comparison">
+        ${comparable}
+      </div>
+    </div>
+    ` : ''}
+
+    <div class="detail-section">
+      <div class="detail-section-title">— PHYSICAL PROFILE (ELITE)</div>
+      ${p.heightMean ? `<div class="attr-row"><span class="attr-label">Height</span><span class="attr-val">${p.heightMean}${p.heightSD ? ' ± ' + p.heightSD : ''} cm</span></div>` : ''}
+      ${p.weightMean ? `<div class="attr-row"><span class="attr-label">Weight</span><span class="attr-val">${p.weightMean}${p.weightSD ? ' ± ' + p.weightSD : ''} kg</span></div>` : ''}
+      ${p.bmiMean ? `<div class="attr-row"><span class="attr-label">BMI</span><span class="attr-val">${p.bmiMean}</span></div>` : ''}
+      ${p.bfMean ? `<div class="attr-row"><span class="attr-label">Body fat</span><span class="attr-val">${p.bfMean}%</span></div>` : ''}
+      ${p.wingspanRatio ? `<div class="attr-row"><span class="attr-label">Wingspan / height</span><span class="attr-val">${p.wingspanRatio}</span></div>` : ''}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">— DEMAND PROFILE</div>
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;">
+        GREEN = SPORT DEMAND · GOLD = YOU
+      </p>
+      ${demandsHtml}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">— ATTRIBUTES</div>
+      <div class="attr-row"><span class="attr-label">Category</span><span class="attr-val">${sport.category || ''}</span></div>
+      <div class="attr-row"><span class="attr-label">Team size</span><span class="attr-val">${sport.categorical.teamSize || ''}</span></div>
+      <div class="attr-row"><span class="attr-label">Contact</span><span class="attr-val">${sport.categorical.contact || ''}</span></div>
+      <div class="attr-row"><span class="attr-label">Environment</span><span class="attr-val">${sport.categorical.environment || ''}</span></div>
+      <div class="attr-row"><span class="attr-label">Equipment cost</span><span class="attr-val">${sport.categorical.equipmentCost || ''}</span></div>
+      <div class="attr-row"><span class="attr-label">Injury risk</span><span class="attr-val">${sport.categorical.injuryRisk || ''}</span></div>
+      <div class="attr-row"><span class="attr-label">Ireland accessibility</span><span class="attr-val">${sport.ireland.accessibility || ''}/10</span></div>
+    </div>
+
+    ${sport.notes ? `
+    <div class="detail-section">
+      <div class="detail-section-title">— NOTES</div>
+      <p class="notes">${sport.notes}</p>
+    </div>
+    ` : ''}
+
+    ${sport.sources ? `
+    <div class="detail-section">
+      <div class="detail-section-title">— SOURCES</div>
+      <p class="notes" style="font-family:'JetBrains Mono',monospace;font-style:normal;font-size:11px;">
+        ${sport.sources}
+      </p>
+    </div>
+    ` : ''}
+
+    <button class="btn ghost" onclick="closeDetail()" style="margin-top: 24px;">BACK TO DECK</button>
+    <button class="btn" onclick="restartQuiz()" style="margin-top: 8px;">RUN AGAIN</button>
+  `;
+
+  showScreen('card-detail');
+}
+
+function closeDetail() {
+  showScreen('results');
+}
+
+function restartQuiz() {
+  state.questionIndex = 0;
+  state.results = { builtfor: [], enjoy: [], overall: [] };
+  clearProgress();
+  // Remove any returning-user block since results are gone
+  const block = document.getElementById('returning-block');
+  if (block) block.remove();
+  const startBtn = document.querySelector('#welcome .btn:not(.ghost)');
+  if (startBtn) startBtn.textContent = 'START THE TEST';
+  showScreen('welcome');
+}
+
+
+/* ============================================================
+   PERSISTENCE — save/load to localStorage
+   ============================================================ */
+
+const STORAGE_KEY = 'builtfor_v0_1';
+const LEGACY_STORAGE_KEYS = ['yoursport_v0_2'];
+
+function saveProgress() {
+  try {
+    const data = {
+      answers: state.answers,
+      results: state.results,
+      currentTab: state.currentTab,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    /* localStorage might be blocked — silent fail */
+  }
+}
+
+function loadProgress() {
+  try {
+    let raw = localStorage.getItem(STORAGE_KEY);
+    // One-time migration from legacy keys
+    if (!raw) {
+      for (const legacy of LEGACY_STORAGE_KEYS) {
+        const legacyRaw = localStorage.getItem(legacy);
+        if (legacyRaw) {
+          raw = legacyRaw;
+          try { localStorage.setItem(STORAGE_KEY, legacyRaw); } catch (e) {}
+          try { localStorage.removeItem(legacy); } catch (e) {}
+          break;
+        }
+      }
+    }
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data.results || !data.results.overall || data.results.overall.length === 0) return null;
+    const age = Date.now() - (data.timestamp || 0);
+    if (age > 30 * 24 * 60 * 60 * 1000) return null;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+}
+
+/* ============================================================
+   EDIT ANSWERS — backtrack flow
+   Re-runs the quiz but starts at the question the user picks (or 0)
+   Existing answers stay pre-filled in state.answers
+   ============================================================ */
+
+function editAnswers() {
+  state.questionIndex = 0;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+/* ============================================================
+   RESTORE ON LOAD
+   ============================================================ */
+
+function attemptRestore() {
+  const saved = loadProgress();
+  if (saved && saved.answers && saved.results.overall.length > 0) {
+    state.answers = saved.answers;
+    state.results = saved.results;
+    state.currentTab = saved.currentTab || 'overall';
+    addReturningUserBadge();
+  }
+}
+
+function addReturningUserBadge() {
+  // Add a small "Welcome back" affordance + a 'View last deck' button on welcome
+  const welcome = document.getElementById('welcome');
+  if (!welcome) return;
+  if (document.getElementById('returning-block')) return;
+
+  const block = document.createElement('div');
+  block.id = 'returning-block';
+  block.style.cssText = 'margin-top: 12px;';
+  block.innerHTML = `
+    <button class="btn ghost" onclick="viewLastDeck()" style="margin-top: 8px;">VIEW LAST DECK</button>
+    <p style="text-align:center;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dimmer);letter-spacing:0.15em;">— OR —</p>
+  `;
+  // Insert ABOVE the START button
+  const startBtn = welcome.querySelector('.btn');
+  if (startBtn && startBtn.parentNode) {
+    startBtn.parentNode.insertBefore(block, startBtn);
+  }
+  // Also change the start button label slightly
+  if (startBtn) startBtn.textContent = 'RUN A NEW TEST';
+}
+
+function viewLastDeck() {
+  renderResults();
+  showScreen('results');
+}
+
+attemptRestore();
+
+</script>
+
+</body>
+</html>

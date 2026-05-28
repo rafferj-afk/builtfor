@@ -1,0 +1,47 @@
+
+---
+
+### 3. **DATABASE\_SCHEMA.md**
+
+Copy-paste this from your handover:
+
+```markdown
+# Database Schema Reference
+
+## Profiles Sheet Column Layout
+
+| Col | Field | Notes |
+|-----|-------|-------|
+| A | Sport ID | e.g. SP01, SP01b (positional variant), SP01F (female), SP01Fb |
+| B | Sport | Common name |
+| C | Position / Discipline | If position differences are dramatic, split into multiple rows |
+| D | Category | Team field, Individual racquet, Combat striking, etc. |
+| E–L | Height, Weight, BMI, BF%, wingspan/height ratio, sitting-height ratio (mean and SD) |
+| M–U | Demand profile (1–10): aerobic, anaerobic, max strength, power, speed, endurance, flexibility, coordination, reaction |
+| V–AB | Categorical: team size, contact level, environment, water-based, equipment cost, entry age, injury risk |
+| AC–AD | Ireland accessibility (1–10), local clubs prevalent |
+| AE | Primary Source IDs (comma-separated, e.g. "S01, S02") |
+| AF | Notes (caveats, position differences, sample-specific context) |
+| AG | Sex (M / F) — hard filter; female-only sports MUST be tagged F |
+
+## Adding a New Sport
+
+1. Find peer-reviewed anthropometric studies (Google Scholar: `"anthropometric profile" elite [sport]`)
+2. Add study to Sources sheet with next available Source ID
+3. Add row to Profiles matching the schema above
+4. **Set Sex column correctly** (M or F — critical for filtering)
+5. Re-export to JSON and inline into app HTML
+6. Add hand-written entry to `ELITE_COMPARISONS` in the app
+
+## Elite Comparisons Format
+
+One sentence, two at most. Specific to body distinctiveness. Use famous-name references when unambiguous.
+
+Example:
+> "Elite male high jumpers are 192 cm / 76 kg — highest height-to-weight ratio in athletics. Long, light, springy. The body type Dick Fosbury made famous."
+
+## Export Pipeline (Spreadsheet → App)
+
+[Copy the Python script from § 3 of your handover]
+
+**CRITICAL:** Use `string.replace(old, new)` not `re.sub()` for JSON replacement — `re.sub` treats `\u` as regex escapes and crashes.
