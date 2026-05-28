@@ -1526,18 +1526,30 @@ const questions = [
   {
     id: 'body',
     eyebrow: '03 — BODY',
-    question: 'Your body, in three numbers.',
+    question: 'Your body, in two numbers.',
     help: 'Be honest. The model handles all body types — accuracy beats vanity.',
     type: 'multi-slider',
     sliders: [
       { id: 'height', label: 'HEIGHT', unit: 'CM', min: 140, max: 220, step: 1, default: 175 },
       { id: 'weight', label: 'WEIGHT', unit: 'KG', min: 40, max: 180, step: 1, default: 75 },
-      { id: 'wingspan', label: 'ARM SPAN', unit: 'CM', min: 140, max: 230, step: 1, default: 175, help: 'Fingertip to fingertip. If unsure, use your height.' },
+    ],
+  },
+  {
+    id: 'wingspanCat',
+    eyebrow: '04 — BUILD',
+    question: 'How does your arm span compare to your height?',
+    help: 'Fingertip to fingertip vs top of head. Most people are roughly equal. Matters most for swimming, rowing, and combat sports.',
+    type: 'choice',
+    options: [
+      { label: 'Shorter than my height', value: 'shorter' },
+      { label: 'About the same', value: 'same' },
+      { label: 'A bit longer', value: 'longer' },
+      { label: 'Much longer (long reach)', value: 'much_longer' },
     ],
   },
   {
     id: 'bodyFat',
-    eyebrow: '04 — COMPOSITION',
+    eyebrow: '05 — COMPOSITION',
     question: 'Body fat percentage?',
     help: 'Best estimate. Athletic males 8–15%, athletic females 16–24%. Visual estimate is fine.',
     type: 'slider',
@@ -1545,9 +1557,9 @@ const questions = [
   },
   {
     id: 'archetype',
-    eyebrow: '05 — FITNESS',
+    eyebrow: '06 — FITNESS',
     question: 'Where does your fitness sit?',
-    help: 'Pick the one that fits best. Some overlap is fine.',
+    help: 'Pick 1 or 2 that fit best. Choose both if you\'re genuinely a mix.',
     type: 'archetype',
     options: [
       {
@@ -1584,7 +1596,7 @@ const questions = [
   },
   {
     id: 'sportsEnjoyed',
-    eyebrow: '06 — HISTORY',
+    eyebrow: '07 — HISTORY',
     question: 'Sports you\'ve genuinely enjoyed?',
     help: 'Pick as many as apply. Skip if none. Boosts recommendations in similar categories.',
     type: 'multi-select',
@@ -1601,7 +1613,7 @@ const questions = [
   },
   {
     id: 'experience',
-    eyebrow: '07 — EXPERIENCE',
+    eyebrow: '08 — EXPERIENCE',
     question: 'Longest you\'ve competed seriously?',
     help: 'In any one sport, at any level above casual play.',
     type: 'choice',
@@ -1614,7 +1626,7 @@ const questions = [
   },
   {
     id: 'teamSolo',
-    eyebrow: '08 — STYLE',
+    eyebrow: '09 — STYLE',
     question: 'Team or solo?',
     help: 'Some thrive in a team. Some need to be alone with the work.',
     type: 'choice',
@@ -1626,7 +1638,7 @@ const questions = [
   },
   {
     id: 'outdoor',
-    eyebrow: '09 — ENVIRONMENT',
+    eyebrow: '10 — ENVIRONMENT',
     question: 'How important is being outdoors?',
     help: 'Drives whether outdoor sports get a big boost or just a small one.',
     type: 'choice',
@@ -1639,7 +1651,7 @@ const questions = [
   },
   {
     id: 'contact',
-    eyebrow: '10 — CONTACT',
+    eyebrow: '11 — CONTACT',
     question: 'Maximum contact you\'ll tolerate?',
     help: 'How much physical contact you\'re happy with in a sport.',
     type: 'choice',
@@ -1652,7 +1664,7 @@ const questions = [
   },
   {
     id: 'injury',
-    eyebrow: '11 — HEALTH',
+    eyebrow: '12 — HEALTH',
     question: 'Any current or recent injuries?',
     help: 'High-contact and high-injury-risk sports are adjusted down if you\'re carrying something.',
     type: 'choice',
@@ -1665,7 +1677,7 @@ const questions = [
   },
   {
     id: 'water',
-    eyebrow: '12 — WATER',
+    eyebrow: '13 — WATER',
     question: 'Comfortable in water?',
     help: 'If no, we\'ll exclude all water-based sports from your results.',
     type: 'choice',
@@ -1676,7 +1688,7 @@ const questions = [
   },
   {
     id: 'logistics',
-    eyebrow: '13 — LOGISTICS',
+    eyebrow: '14 — LOGISTICS',
     question: 'Budget & location?',
     help: 'Equipment budget to start, and whether Ireland-accessibility matters.',
     type: 'compound-choice',
@@ -1709,6 +1721,40 @@ const questions = [
    typical user of each archetype matches the sports that suit them and gets
    penalised for sports that need very different attributes.
    ============================================================ */
+/* Per-category physical dimension weights [height, weight, bodyFat, wingspan].
+   Must sum to 1.0. Derived from which physical attributes actually discriminate
+   elite performance in each category. */
+const PHYSICAL_WEIGHTS = {
+  default:                              { h:0.28, w:0.25, bf:0.25, ws:0.22 },
+  'Team court':                         { h:0.50, w:0.18, bf:0.15, ws:0.17 },
+  'Team court contact':                 { h:0.28, w:0.35, bf:0.22, ws:0.15 },
+  'Team field':                         { h:0.27, w:0.30, bf:0.25, ws:0.18 },
+  'Team field contact':                 { h:0.20, w:0.42, bf:0.25, ws:0.13 },
+  'Team field stick':                   { h:0.27, w:0.28, bf:0.25, ws:0.20 },
+  'Team contact ice':                   { h:0.23, w:0.37, bf:0.25, ws:0.15 },
+  'Team water contact':                 { h:0.28, w:0.27, bf:0.20, ws:0.25 },
+  'Team precision':                     { h:0.15, w:0.22, bf:0.33, ws:0.30 },
+  'Endurance individual':               { h:0.20, w:0.12, bf:0.52, ws:0.16 },
+  'Endurance individual / pair':        { h:0.20, w:0.12, bf:0.52, ws:0.16 },
+  'Endurance individual / pursuit':     { h:0.22, w:0.18, bf:0.44, ws:0.16 },
+  'Endurance multi':                    { h:0.22, w:0.18, bf:0.44, ws:0.16 },
+  'Endurance team / pair':              { h:0.28, w:0.22, bf:0.18, ws:0.32 },
+  'Strength individual':                { h:0.12, w:0.55, bf:0.22, ws:0.11 },
+  'Power-speed individual':             { h:0.28, w:0.27, bf:0.25, ws:0.20 },
+  'Power-jump individual':              { h:0.35, w:0.20, bf:0.25, ws:0.20 },
+  'Power-throw individual':             { h:0.20, w:0.42, bf:0.22, ws:0.16 },
+  'Power-skill individual':             { h:0.20, w:0.22, bf:0.38, ws:0.20 },
+  'Individual aesthetic':               { h:0.28, w:0.18, bf:0.38, ws:0.16 },
+  'Individual racquet':                 { h:0.22, w:0.22, bf:0.25, ws:0.31 },
+  'Individual technical':               { h:0.18, w:0.22, bf:0.35, ws:0.25 },
+  'Individual water':                   { h:0.25, w:0.15, bf:0.20, ws:0.40 },
+  'Combat grappling':                   { h:0.15, w:0.55, bf:0.20, ws:0.10 },
+  'Combat striking':                    { h:0.23, w:0.40, bf:0.22, ws:0.15 },
+  'Combat mixed':                       { h:0.20, w:0.45, bf:0.22, ws:0.13 },
+};
+
+const WINGSPAN_RATIO = { shorter: 0.970, same: 1.000, longer: 1.030, much_longer: 1.065 };
+
 const ARCHETYPE_PROFILES = {
   endurance:  { aerobic: 9, anaerobic: 7, maxStrength: 4, power: 5, speed: 6, flexibility: 5, coordination: 6, reaction: 5 },
   strength:   { aerobic: 4, anaerobic: 6, maxStrength: 9, power: 8, speed: 4, flexibility: 4, coordination: 5, reaction: 5 },
@@ -1744,6 +1790,20 @@ const SPORT_CATEGORY_BUCKET = {
   'Power-jump individual':   'explosive_cat',
   'Power-skill individual':  'explosive_cat',
   'Team precision':          'technical',
+};
+
+/* Adjacent enjoyed-sport buckets — sports in these categories get a partial
+   boost when a user has enjoyed a related category. Direct match = 1.15×,
+   adjacent match = 1.07×. */
+const CATEGORY_ADJACENCY = {
+  team_field:   ['team_court', 'endurance'],
+  team_court:   ['team_field', 'racquet'],
+  racquet:      ['team_court', 'technical'],
+  combat:       ['strength', 'technical'],
+  water:        ['endurance'],
+  endurance:    ['team_field', 'water'],
+  strength:     ['combat', 'technical'],
+  technical:    ['racquet', 'combat', 'strength'],
 };
 
 /* ============================================================
@@ -1835,12 +1895,12 @@ function renderQuestion() {
     bodyHtml += '</div>';
 
   } else if (q.type === 'archetype') {
-    // Same visual treatment as choice but with a subtitle on each card
+    if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
     bodyHtml += '<div class="options archetype-options">';
     q.options.forEach(function(o) {
-      const selected = state.answers[q.id] === o.value ? ' selected' : '';
+      const isSelected = state.answers[q.id].indexOf(o.value) !== -1;
       bodyHtml +=
-        '<button class="option archetype-option' + selected + '" onclick="selectChoice(\'' + o.value + '\')">' +
+        '<button class="option archetype-option' + (isSelected ? ' selected' : '') + '" onclick="selectArchetype(\'' + o.value + '\')" data-val="' + o.value + '">' +
           '<div class="archetype-text">' +
             '<span class="archetype-label">' + o.label + '</span>' +
             '<span class="archetype-sub">' + o.sub + '</span>' +
@@ -1849,6 +1909,7 @@ function renderQuestion() {
         '</button>';
     });
     bodyHtml += '</div>';
+    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM</button>';
 
   } else if (q.type === 'multi-select') {
     if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
@@ -1955,6 +2016,24 @@ function toggleMulti(value) {
   }
 }
 
+function selectArchetype(value) {
+  const q = questions[state.questionIndex];
+  if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
+  const arr = state.answers[q.id];
+  const i = arr.indexOf(value);
+  if (i !== -1) {
+    arr.splice(i, 1);
+  } else if (arr.length < 2) {
+    arr.push(value);
+  }
+  const card = document.querySelector('.q-card');
+  if (card) {
+    card.querySelectorAll('.archetype-option').forEach(function(b) {
+      b.classList.toggle('selected', arr.indexOf(b.dataset.val) !== -1);
+    });
+  }
+}
+
 function selectCompound(partId, value) {
   state.answers[partId] = value;
   const card = document.querySelector('.q-card');
@@ -1976,7 +2055,6 @@ function selectScale(n) {
 function confirmAnswer() {
   const card = document.querySelector('.q-card');
   if (!card) return;
-  // For the wingspan question, sync default to height if user left at default
   card.classList.add('gone-up');
   setTimeout(() => {
     state.questionIndex++;
@@ -2120,10 +2198,10 @@ function computeBuiltFor(user, sport) {
     bfFit = Math.max(0, 1 - Math.abs(user.bodyFat - p.bfMean) / 5 / 3);
   }
 
-  // Wingspan/height ratio fit
-  let wingspanFit = (heightFit + weightFit + bfFit) / 3;  // fallback
+  // Wingspan/height ratio fit — use categorical answer if available, else legacy CM value
+  let wingspanFit = (heightFit + weightFit + bfFit) / 3;  // fallback when sport has no ratio data
   if (p.wingspanRatio) {
-    const userRatio = user.wingspan / user.height;
+    const userRatio = WINGSPAN_RATIO[user.wingspanCat] || (user.wingspan ? user.wingspan / user.height : 1.0);
     wingspanFit = Math.max(0, 1 - Math.abs(userRatio - p.wingspanRatio) / 0.03 / 3);
   }
 
@@ -2136,7 +2214,19 @@ function computeBuiltFor(user, sport) {
   // under-qualification (you can still do the sport, just over-built for it),
   // hence the 0.5× weight rather than full symmetry.
   // Derive user's demand profile from their selected archetype
-  const archetype = ARCHETYPE_PROFILES[user.archetype] || ARCHETYPE_PROFILES.balanced;
+  let archetype;
+  if (Array.isArray(user.archetype) && user.archetype.length > 0) {
+    const profiles = user.archetype.map(a => ARCHETYPE_PROFILES[a] || ARCHETYPE_PROFILES.balanced);
+    if (profiles.length === 1) {
+      archetype = profiles[0];
+    } else {
+      const keys = ['aerobic','anaerobic','maxStrength','power','speed','flexibility','coordination','reaction'];
+      archetype = {};
+      keys.forEach(k => { archetype[k] = (profiles[0][k] + profiles[1][k]) / 2; });
+    }
+  } else {
+    archetype = ARCHETYPE_PROFILES[user.archetype] || ARCHETYPE_PROFILES.balanced;
+  }
   const d = sport.demands;
   const demandPairs = [
     [d.aerobic, archetype.aerobic],
@@ -2159,8 +2249,9 @@ function computeBuiltFor(user, sport) {
   }, 0);
   const demandFit = 100 * Math.max(0, 1 - totalGap / 40);
 
-  // Composite: physical 60% (averaged across 4 dims), demand 40%
-  const physicalAvg = (heightFit + weightFit + bfFit + wingspanFit) / 4;
+  // Composite: physical 60% (weighted by category), demand 40%
+  const wt = PHYSICAL_WEIGHTS[sport.category] || PHYSICAL_WEIGHTS.default;
+  const physicalAvg = wt.h * heightFit + wt.w * weightFit + wt.bf * bfFit + wt.ws * wingspanFit;
   const score = 60 * physicalAvg + 0.4 * demandFit;
 
   return Math.round(score * 10) / 10;
@@ -2233,13 +2324,18 @@ function computeEnjoyment(user, sport) {
     teamSolo = soloFit;
   }
 
-  // Contact
+  // Contact — penalise if sport exceeds tolerance; reward exact alignment;
+  // slight penalty if sport is 2+ levels below preference (you wanted contact, didn't get it)
   const contactMap = { 'None': 0, 'Light': 1, 'Medium': 2, 'Heavy': 3 };
   const sportContact = contactMap[c.contact] ?? 0;
   const userContact = contactMap[user.contact] ?? 3;
   let contactMatch = 1;
   if (sportContact > userContact) {
     contactMatch = Math.max(0, 1 - 0.4 * (sportContact - userContact));
+  } else if (sportContact === userContact && userContact > 0) {
+    contactMatch = 1.10;
+  } else if (userContact - sportContact >= 2) {
+    contactMatch = 0.90;
   }
 
   // Environment — driven by the new "outdoor importance" question
@@ -2274,14 +2370,19 @@ function computeEnjoyment(user, sport) {
     irelandFit = (typeof sport.ireland.accessibility === 'number') ? sport.ireland.accessibility / 10 : 0.5;
   }
 
-  // Sports-enjoyed boost: if the user picked categories they've enjoyed, sports
-  // mapped to those categories get a multiplicative bonus on enjoyment.
-  // Caps at 1.15x (so a "perfect category match" lifts an 80 to 92, never breaks 100).
+  // Sports-enjoyed boost: direct category match = 1.15×, adjacent category = 1.07×
   let categoryBoost = 1.0;
   if (Array.isArray(user.sportsEnjoyed) && user.sportsEnjoyed.length > 0) {
     const bucket = SPORT_CATEGORY_BUCKET[sport.category];
-    if (bucket && user.sportsEnjoyed.indexOf(bucket) !== -1) {
-      categoryBoost = 1.15;
+    if (bucket) {
+      if (user.sportsEnjoyed.indexOf(bucket) !== -1) {
+        categoryBoost = 1.15;
+      } else {
+        const adjacent = CATEGORY_ADJACENCY[bucket] || [];
+        if (adjacent.some(adj => user.sportsEnjoyed.indexOf(adj) !== -1)) {
+          categoryBoost = 1.07;
+        }
+      }
     }
   }
 
@@ -2301,14 +2402,14 @@ function computeEnjoyment(user, sport) {
     }
   }
 
-  // Weighted sum (sex match is just the gate at the top — full credit once passed)
+  // Weighted sum — ireland reduced to 0.10 (was 0.25), redistributed to team/solo and budget
   const baseScore = 100 * (
     0.10 +
-    teamSolo * 0.20 +
-    contactMatch * 0.20 +
+    teamSolo * 0.25 +
+    contactMatch * 0.25 +
     envMatch * 0.10 +
-    budgetMatch * 0.15 +
-    irelandFit * 0.25
+    budgetMatch * 0.20 +
+    irelandFit * 0.10
   );
 
   const ageFit    = computeAgeFit(user.ageGroup, c.contact, c.injuryRisk);
