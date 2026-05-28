@@ -695,8 +695,36 @@ input[type="range"]::-moz-range-thumb {
   font-family: 'Archivo', sans-serif;
   font-size: 13px;
   color: var(--text-dim);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
+
+.card-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.reason-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: 'Archivo', sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.reason-mark {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+  width: 10px;
+}
+.reason-row.strength { color: var(--text); }
+.reason-row.strength .reason-mark { color: var(--accent); }
+.reason-row.weakness { color: var(--text-dim); }
+.reason-row.weakness .reason-mark { color: var(--accent-fire); }
 
 .card-stats {
   display: grid;
@@ -1113,34 +1141,28 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1.4;
 }
 
-/* Archetype options — bigger blocks with subtitles */
-.archetype-options { gap: 8px; }
-.archetype-option {
-  padding: 14px 18px;
-  align-items: center;
-  min-height: 60px;
-}
-.archetype-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  text-align: left;
-}
-.archetype-label {
-  font-family: 'Anton', sans-serif;
-  font-size: 16px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  line-height: 1;
-}
-.archetype-sub {
-  font-size: 12px;
-  color: var(--text-dim);
+/* Compact variant — used for 6-dim fitness self-rating so it fits one screen */
+.multi-slider.compact { gap: 11px; margin-top: 10px; }
+.multi-slider.compact .multi-slider-row { gap: 2px; }
+.multi-slider.compact .multi-slider-head { align-items: center; }
+.multi-slider.compact .multi-slider-label { font-size: 10px; letter-spacing: 0.15em; }
+.multi-slider.compact .multi-slider-sub {
+  font-family: 'Archivo', sans-serif;
+  font-size: 10px;
+  color: var(--text-dimmer);
   font-weight: 400;
-  line-height: 1.3;
+  margin-left: 8px;
+  text-transform: none;
+  letter-spacing: 0;
 }
-.archetype-option.selected .archetype-sub { color: rgba(0,0,0,0.7); }
+.multi-slider.compact .multi-slider-value { font-size: 22px; line-height: 1; }
+.multi-slider.compact .multi-slider-input { height: 22px; }
+.multi-slider.compact .multi-slider-input::-webkit-slider-thumb {
+  width: 20px; height: 20px; margin-top: -9px;
+}
+.multi-slider.compact .multi-slider-input::-moz-range-thumb {
+  width: 20px; height: 20px;
+}
 
 /* Multi-select option — has a +/✓ marker */
 .multi-option {
@@ -1475,7 +1497,12 @@ const state = {
     weight: 75,
     wingspan: 175,
     bodyFat: 18,
-    archetype: null,
+    aerobic: null,
+    anaerobic: null,
+    maxStrength: null,
+    power: null,
+    speed: null,
+    coordination: null,
     sportsEnjoyed: [],
     experience: null,
     teamSolo: null,
@@ -1556,42 +1583,19 @@ const questions = [
     min: 4, max: 40, step: 1, unit: '%',
   },
   {
-    id: 'archetype',
+    id: 'fitness',
     eyebrow: '06 — FITNESS',
-    question: 'Where does your fitness sit?',
-    help: 'Pick 1 or 2 that fit best. Choose both if you\'re genuinely a mix.',
-    type: 'archetype',
-    options: [
-      {
-        value: 'endurance',
-        label: 'ENDURANCE',
-        sub: 'Long, steady efforts. Running, cycling, hiking.',
-      },
-      {
-        value: 'strength',
-        label: 'STRENGTH',
-        sub: 'Heavy lifts. Built for power production.',
-      },
-      {
-        value: 'explosive',
-        label: 'EXPLOSIVE',
-        sub: 'Sprinting, jumping, fast and short.',
-      },
-      {
-        value: 'skill',
-        label: 'SKILL / COORDINATION',
-        sub: 'Precision, technique, reaction time.',
-      },
-      {
-        value: 'balanced',
-        label: 'BALANCED',
-        sub: 'No strong lean — decent at most things.',
-      },
-      {
-        value: 'untrained',
-        label: 'NEW TO TRAINING',
-        sub: 'Honest baseline. Most people are here.',
-      },
+    question: 'Rate yourself, honestly.',
+    help: '1 = couldn\'t do it · 10 = elite. Drives every recommendation.',
+    type: 'multi-slider',
+    compact: true,
+    sliders: [
+      { id: 'aerobic',      label: 'AEROBIC',      help: 'long, steady efforts',         unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'anaerobic',    label: 'ANAEROBIC',    help: 'repeated hard efforts',        unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'maxStrength',  label: 'MAX STRENGTH', help: 'heavy lifts',                  unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'power',        label: 'POWER',        help: 'explosive moves, jumps',       unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'speed',        label: 'SPEED',        help: 'top sprint speed',             unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'coordination', label: 'COORDINATION', help: 'skill, balance, ball control', unit: '/10', min: 1, max: 10, step: 1, default: 5 },
     ],
   },
   {
@@ -1714,13 +1718,6 @@ const questions = [
   },
 ];
 
-/* ============================================================
-   ARCHETYPE → DEMAND PROFILE MAPPING
-   The old quiz asked 8 separate 1-10 ratings. The new flow asks one archetype
-   question and maps it to a demand profile. The values are calibrated so a
-   typical user of each archetype matches the sports that suit them and gets
-   penalised for sports that need very different attributes.
-   ============================================================ */
 /* Per-category physical dimension weights [height, weight, bodyFat, wingspan].
    Must sum to 1.0. Derived from which physical attributes actually discriminate
    elite performance in each category. */
@@ -1741,6 +1738,7 @@ const PHYSICAL_WEIGHTS = {
   'Endurance team / pair':              { h:0.28, w:0.22, bf:0.18, ws:0.32 },
   'Strength individual':                { h:0.12, w:0.55, bf:0.22, ws:0.11 },
   'Power-speed individual':             { h:0.28, w:0.27, bf:0.25, ws:0.20 },
+  'Individual power-speed':             { h:0.28, w:0.27, bf:0.25, ws:0.20 },
   'Power-jump individual':              { h:0.35, w:0.20, bf:0.25, ws:0.20 },
   'Power-throw individual':             { h:0.20, w:0.42, bf:0.22, ws:0.16 },
   'Power-skill individual':             { h:0.20, w:0.22, bf:0.38, ws:0.20 },
@@ -1754,15 +1752,6 @@ const PHYSICAL_WEIGHTS = {
 };
 
 const WINGSPAN_RATIO = { shorter: 0.970, same: 1.000, longer: 1.030, much_longer: 1.065 };
-
-const ARCHETYPE_PROFILES = {
-  endurance:  { aerobic: 9, anaerobic: 7, maxStrength: 4, power: 5, speed: 6, flexibility: 5, coordination: 6, reaction: 5 },
-  strength:   { aerobic: 4, anaerobic: 6, maxStrength: 9, power: 8, speed: 4, flexibility: 4, coordination: 5, reaction: 5 },
-  explosive:  { aerobic: 5, anaerobic: 9, maxStrength: 7, power: 9, speed: 9, flexibility: 6, coordination: 7, reaction: 8 },
-  skill:      { aerobic: 6, anaerobic: 6, maxStrength: 5, power: 6, speed: 6, flexibility: 7, coordination: 9, reaction: 9 },
-  balanced:   { aerobic: 6, anaerobic: 6, maxStrength: 6, power: 6, speed: 6, flexibility: 6, coordination: 6, reaction: 6 },
-  untrained:  { aerobic: 4, anaerobic: 4, maxStrength: 4, power: 4, speed: 4, flexibility: 4, coordination: 5, reaction: 5 },
-};
 
 /* Map sport categories to the "sports enjoyed" multi-select buckets,
    so liking, say, rugby gives a boost to other team field sports. */
@@ -1865,19 +1854,22 @@ function renderQuestion() {
       '<button class="btn" style="margin-top: 24px;" onclick="confirmAnswer()">CONFIRM</button>';
 
   } else if (q.type === 'multi-slider') {
-    // 3 stacked sliders on one card
-    bodyHtml += '<div class="multi-slider">';
+    // Stacked sliders on one card (compact mode renders help inline with label)
+    bodyHtml += '<div class="multi-slider' + (q.compact ? ' compact' : '') + '">';
     q.sliders.forEach(function(s) {
-      const initial = state.answers[s.id] || s.default;
+      const initial = state.answers[s.id] ?? s.default;
       state.answers[s.id] = initial;
+      const inlineHelp = (q.compact && s.help)
+        ? '<span class="multi-slider-sub">' + s.help + '</span>'
+        : '';
       bodyHtml +=
         '<div class="multi-slider-row">' +
           '<div class="multi-slider-head">' +
-            '<span class="multi-slider-label">' + s.label + '</span>' +
+            '<span class="multi-slider-label">' + s.label + inlineHelp + '</span>' +
             '<span class="multi-slider-value" id="ms-val-' + s.id + '">' + initial + ' <em>' + s.unit + '</em></span>' +
           '</div>' +
           '<input type="range" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '" value="' + initial + '" data-msid="' + s.id + '" class="multi-slider-input">' +
-          (s.help ? '<p class="multi-slider-help">' + s.help + '</p>' : '') +
+          ((!q.compact && s.help) ? '<p class="multi-slider-help">' + s.help + '</p>' : '') +
         '</div>';
     });
     bodyHtml += '</div>';
@@ -1893,23 +1885,6 @@ function renderQuestion() {
         '</button>';
     });
     bodyHtml += '</div>';
-
-  } else if (q.type === 'archetype') {
-    if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
-    bodyHtml += '<div class="options archetype-options">';
-    q.options.forEach(function(o) {
-      const isSelected = state.answers[q.id].indexOf(o.value) !== -1;
-      bodyHtml +=
-        '<button class="option archetype-option' + (isSelected ? ' selected' : '') + '" onclick="selectArchetype(\'' + o.value + '\')" data-val="' + o.value + '">' +
-          '<div class="archetype-text">' +
-            '<span class="archetype-label">' + o.label + '</span>' +
-            '<span class="archetype-sub">' + o.sub + '</span>' +
-          '</div>' +
-          '<span class="arrow">→</span>' +
-        '</button>';
-    });
-    bodyHtml += '</div>';
-    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM</button>';
 
   } else if (q.type === 'multi-select') {
     if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
@@ -2016,24 +1991,6 @@ function toggleMulti(value) {
   }
 }
 
-function selectArchetype(value) {
-  const q = questions[state.questionIndex];
-  if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = [];
-  const arr = state.answers[q.id];
-  const i = arr.indexOf(value);
-  if (i !== -1) {
-    arr.splice(i, 1);
-  } else if (arr.length < 2) {
-    arr.push(value);
-  }
-  const card = document.querySelector('.q-card');
-  if (card) {
-    card.querySelectorAll('.archetype-option').forEach(function(b) {
-      b.classList.toggle('selected', arr.indexOf(b.dataset.val) !== -1);
-    });
-  }
-}
-
 function selectCompound(partId, value) {
   state.answers[partId] = value;
   const card = document.querySelector('.q-card');
@@ -2084,7 +2041,7 @@ function enableScroll(card) {
 
   function onStart(e) {
     // Don't start a drag on inputs/buttons — they need their own touch behaviour
-    if (e.target.closest('button, input, .scale-chip, .multi-option, .compound-option, .archetype-option')) return;
+    if (e.target.closest('button, input, .scale-chip, .multi-option, .compound-option')) return;
     // Only start a back-drag when the card is scrolled to the top; otherwise let native scroll handle it
     if (card.scrollTop > 2) return;
     dragging = true;
@@ -2205,49 +2162,13 @@ function computeBuiltFor(user, sport) {
     wingspanFit = Math.max(0, 1 - Math.abs(userRatio - p.wingspanRatio) / 0.03 / 3);
   }
 
-  // Demand profile fit — ASYMMETRIC penalty:
-  //   Under-qualified (user < sport demand): full penalty (dem - usr)
-  //   Over-qualified  (user > sport demand): half penalty 0.5 × (usr - dem)
-  // Previous version only penalised under-qualification, which led to sports
-  // with low demand profiles (e.g. distance running) ranking high for users
-  // who clearly don't fit them. Over-qualification is genuinely less bad than
-  // under-qualification (you can still do the sport, just over-built for it),
-  // hence the 0.5× weight rather than full symmetry.
-  // Derive user's demand profile from their selected archetype
-  let archetype;
-  if (Array.isArray(user.archetype) && user.archetype.length > 0) {
-    const profiles = user.archetype.map(a => ARCHETYPE_PROFILES[a] || ARCHETYPE_PROFILES.balanced);
-    if (profiles.length === 1) {
-      archetype = profiles[0];
-    } else {
-      const keys = ['aerobic','anaerobic','maxStrength','power','speed','flexibility','coordination','reaction'];
-      archetype = {};
-      keys.forEach(k => { archetype[k] = (profiles[0][k] + profiles[1][k]) / 2; });
-    }
-  } else {
-    archetype = ARCHETYPE_PROFILES[user.archetype] || ARCHETYPE_PROFILES.balanced;
-  }
-  const d = sport.demands;
-  const demandPairs = [
-    [d.aerobic, archetype.aerobic],
-    [d.anaerobic, archetype.anaerobic],
-    [d.maxStrength, archetype.maxStrength],
-    [d.power, archetype.power],
-    [d.speed, archetype.speed],
-    [d.flexibility, archetype.flexibility],
-    [d.coordination, archetype.coordination],
-    [d.reaction, archetype.reaction],
-  ];
-  const totalGap = demandPairs.reduce((sum, [dem, usr]) => {
-    const dm = dem || 0;
-    const us = usr || 0;
-    if (us < dm) {
-      return sum + (dm - us);          // under: full penalty
-    } else {
-      return sum + 0.5 * (us - dm);    // over: half penalty
-    }
-  }, 0);
-  const demandFit = 100 * Math.max(0, 1 - totalGap / 40);
+  // Demand profile fit — bottleneck-aware:
+  //   The sport's TOP 3 demands are treated as "critical" (the dims that
+  //   actually gate elite performance). User must meet them or the score
+  //   collapses regardless of how well other dims match. Other dims
+  //   contribute lightly. See computeDemandAnalysis below.
+  const demandAnalysis = computeDemandAnalysis(user, sport);
+  const demandFit = demandAnalysis.fit;
 
   // Composite: physical 60% (weighted by category), demand 40%
   const wt = PHYSICAL_WEIGHTS[sport.category] || PHYSICAL_WEIGHTS.default;
@@ -2255,6 +2176,151 @@ function computeBuiltFor(user, sport) {
   const score = 60 * physicalAvg + 0.4 * demandFit;
 
   return Math.round(score * 10) / 10;
+}
+
+/* ============================================================
+   DEMAND ANALYSIS — critical-dim weighting + bottleneck floor
+
+   Idea: elite performance in a sport is gated by its TOP demands.
+   A sprinter who's elite on aerobic but bottom-10% on speed/power
+   is not a sprinter. So we identify each sport's top 3 demands
+   (the "critical" dims) and weight them heavily; the bottleneck
+   (worst critical gap) caps the score so no amount of overshoot
+   on other dims rescues a critical miss.
+
+   We only ask the user about 6 dims; flexibility and reaction are
+   derived (flex ≈ coordination, reaction ≈ avg(speed, coordination)).
+   ============================================================ */
+function userDemandVector(user) {
+  const c = user.coordination ?? 5;
+  const s = user.speed ?? 5;
+  return {
+    aerobic:      user.aerobic ?? 5,
+    anaerobic:    user.anaerobic ?? 5,
+    maxStrength:  user.maxStrength ?? 5,
+    power:        user.power ?? 5,
+    speed:        s,
+    coordination: c,
+    flexibility:  c,                  // derived
+    reaction:     Math.round((s + c) / 2),  // derived
+  };
+}
+
+function computeDemandAnalysis(user, sport) {
+  const dims = ['aerobic','anaerobic','maxStrength','power','speed','flexibility','coordination','reaction'];
+  const userVec = userDemandVector(user);
+  const d = sport.demands;
+
+  // Rank dims by sport demand value (highest first)
+  const ranked = dims
+    .map(k => ({ key: k, dem: d[k] || 0, usr: userVec[k] || 0 }))
+    .sort((a, b) => b.dem - a.dem);
+
+  // Critical = top 3; other = remaining
+  const critical = ranked.slice(0, 3).map(r => ({ ...r, critical: true }));
+  const other    = ranked.slice(3).map(r => ({ ...r, critical: false }));
+
+  // Per-dim fit: 1.0 if user >= sport, falls to 0 over a 5-point under-gap
+  // for critical, 8-point gap for non-critical (gentler).
+  // Over-qualification incurs a tiny penalty so sprinters don't show top for
+  // marathon runners — but much less than under-qualification.
+  function dimFit(r, underScale, overScale) {
+    const under = Math.max(0, r.dem - r.usr);
+    const over  = Math.max(0, r.usr - r.dem);
+    return Math.max(0, 1 - under / underScale - over / overScale);
+  }
+
+  const critFits  = critical.map(r => ({ ...r, fit: dimFit(r, 5, 14) }));
+  const otherFits = other.filter(r => r.dem >= 4)  // skip irrelevant low-demand dims
+                         .map(r => ({ ...r, fit: dimFit(r, 8, 18) }));
+
+  const critMean    = critFits.reduce((s, r) => s + r.fit, 0) / critFits.length;
+  const bottleneck  = Math.min(...critFits.map(r => r.fit));
+  const otherMean   = otherFits.length === 0
+    ? 1.0
+    : otherFits.reduce((s, r) => s + r.fit, 0) / otherFits.length;
+
+  // Composite: critical mean (60%) + bottleneck floor (25%) + other (15%)
+  const fit01 = 0.60 * critMean + 0.25 * bottleneck + 0.15 * otherMean;
+  const fit   = Math.max(0, Math.min(1, fit01)) * 100;
+
+  return {
+    fit: fit,
+    perDim: critFits.concat(other.map(r => ({ ...r, fit: dimFit(r, 8, 18) }))),
+    criticalKeys: critFits.map(r => r.key),
+    bottleneck: bottleneck,
+  };
+}
+
+/* ============================================================
+   REASONS — surface why a sport ranks where it does
+
+   Returns up to 2 strengths and 1 dealbreaker, drawn from physical
+   fit + critical demand fit. Used on the result card front.
+   ============================================================ */
+const DIM_LABELS = {
+  aerobic: 'aerobic',
+  anaerobic: 'anaerobic',
+  maxStrength: 'strength',
+  power: 'power',
+  speed: 'speed',
+  flexibility: 'flexibility',
+  coordination: 'skill',
+  reaction: 'reaction',
+};
+
+function computeReasons(user, sport, demandAnalysis) {
+  const strengths = [];
+  const weaknesses = [];
+  const p = sport.physical;
+
+  // Physical strengths/weaknesses
+  if (p.heightMean !== null && p.heightMean !== undefined) {
+    const sd = p.heightSD || Math.max(3, p.heightMean * 0.04);
+    const z = (user.height - p.heightMean) / sd;
+    if (Math.abs(z) <= 0.6) strengths.push('Height in elite range');
+    else if (z >= 2.2)      weaknesses.push('Taller than typical elite');
+    else if (z <= -2.2)     weaknesses.push('Shorter than typical elite');
+  }
+  if (p.weightMean !== null && p.weightMean !== undefined) {
+    const sd = p.weightSD || Math.max(4, p.weightMean * 0.06);
+    const z = (user.weight - p.weightMean) / sd;
+    if (Math.abs(z) <= 0.6) strengths.push('Build matches typical athlete');
+    else if (z >= 2.5)      weaknesses.push('Heavier than typical elite');
+    else if (z <= -2.5)     weaknesses.push('Lighter than typical elite');
+  }
+  if (p.bfMean !== null && p.bfMean !== undefined && Math.abs(user.bodyFat - p.bfMean) <= 2.5) {
+    strengths.push('Body composition aligned');
+  }
+  if (p.wingspanRatio) {
+    const userRatio = WINGSPAN_RATIO[user.wingspanCat] || (user.wingspan ? user.wingspan / user.height : 1.0);
+    if (Math.abs(userRatio - p.wingspanRatio) <= 0.015) {
+      strengths.push('Wingspan ideal for reach');
+    } else if (userRatio < p.wingspanRatio - 0.035) {
+      weaknesses.push('Wingspan short for this sport');
+    }
+  }
+
+  // Demand strength: highest critical dim where user meets or exceeds
+  const critMet = demandAnalysis.perDim
+    .filter(r => r.critical && r.usr >= r.dem)
+    .sort((a, b) => b.dem - a.dem);
+  if (critMet[0]) {
+    strengths.push('You match the ' + DIM_LABELS[critMet[0].key] + ' demand');
+  }
+
+  // Demand weakness: worst critical under-gap (only if meaningful)
+  const critGap = demandAnalysis.perDim
+    .filter(r => r.critical && (r.dem - r.usr) >= 3)
+    .sort((a, b) => (b.dem - b.usr) - (a.dem - a.usr));
+  if (critGap[0]) {
+    weaknesses.push(DIM_LABELS[critGap[0].key].charAt(0).toUpperCase() + DIM_LABELS[critGap[0].key].slice(1) + ' below elite demand');
+  }
+
+  return {
+    strengths: strengths.slice(0, 2),
+    weakness:  weaknesses[0] || '',
+  };
 }
 
 function computeAgeFit(ageGroup, contact, injuryRisk) {
@@ -2440,12 +2506,16 @@ function runScoring() {
   }, 600);
 
   setTimeout(() => {
-    // Compute scores
+    // Compute scores + reasons (why this sport ranks where it does)
     const scored = SPORTS_DATA.map(sport => {
       const builtFor = computeBuiltFor(state.answers, sport);
       const enjoyment = computeEnjoyment(state.answers, sport);
       const total = (enjoyment === 0) ? 0 : Math.round((0.5 * builtFor + 0.5 * enjoyment) * 10) / 10;
-      return { sport, builtFor, enjoyment, total };
+      // Skip reasons for excluded sports (sex/water gate)
+      const reasons = (builtFor === 0)
+        ? { strengths: [], weakness: '' }
+        : computeReasons(state.answers, sport, computeDemandAnalysis(state.answers, sport));
+      return { sport, builtFor, enjoyment, total, reasons };
     });
 
     state.results.overall = [...scored].sort((a, b) => b.total - a.total).slice(0, 15);
@@ -2493,7 +2563,7 @@ function renderTab(tab) {
   const scroll = document.getElementById('deck-scroll');
   const results = state.results[tab] || [];
 
-  if (results.length === 0 || results[0].total === 0 && tab === 'overall') {
+  if (results.length === 0 || (results[0].total === 0 && tab === 'overall')) {
     scroll.innerHTML = `
       <div class="empty-state">
         <h2 class="display">No matches.</h2>
@@ -2526,6 +2596,16 @@ function renderTab(tab) {
     ].sort((a, b) => (b[1] || 0) - (a[1] || 0));
     const topStats = demandsArr.slice(0, 6);
 
+    // Reasons: top 2 strengths + 1 dealbreaker
+    const reasons = r.reasons || { strengths: [], weakness: '' };
+    const reasonsHtml = (reasons.strengths.length > 0 || reasons.weakness)
+      ? `
+        <div class="card-reasons">
+          ${reasons.strengths.map(s => `<div class="reason-row strength"><span class="reason-mark">+</span><span>${s}</span></div>`).join('')}
+          ${reasons.weakness ? `<div class="reason-row weakness"><span class="reason-mark">−</span><span>${reasons.weakness}</span></div>` : ''}
+        </div>`
+      : '';
+
     return `
       <div class="athlete-card tier-${tier}" onclick="openDetail(${i}, '${tab}')">
         <div class="card-inner">
@@ -2537,6 +2617,7 @@ function renderTab(tab) {
           <div class="card-score-label">${primaryLabel} SCORE</div>
           <div class="card-sport">${sportName}</div>
           <div class="card-position">${position || ''}</div>
+          ${reasonsHtml}
           <div class="card-stats">
             ${topStats.map(([k, v]) => `
               <div class="stat">
