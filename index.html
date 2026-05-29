@@ -3745,7 +3745,7 @@ function renderSourceCitations(src) {
 
 function showAbout() {
   const el = document.getElementById('about-citations');
-  if (el && !el.hasChildNodes()) renderAboutCitations(el);
+  if (el && !el.querySelector('.citation-entry')) renderAboutCitations(el);
   showScreen('about');
 }
 
