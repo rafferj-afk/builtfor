@@ -18,7 +18,7 @@ Usage:
 import json, re
 import openpyxl
 
-HTML_PATH  = 'builtfor.html'
+HTML_PATH  = 'index.html'
 EXCEL_PATH = 'sport_profile_database_v1_5.xlsx'
 
 # ── 1. Read Excel Profiles sheet ──────────────────────────────────────────────

@@ -10,7 +10,7 @@ Run once to make the Excel the complete source of truth.
 import re, json
 import openpyxl
 
-HTML_PATH  = 'builtfor.html'
+HTML_PATH  = 'index.html'
 EXCEL_PATH = 'sport_profile_database_v1_5.xlsx'
 
 # ── 1. Parse SPORTS_DATA from HTML ────────────────────────────────────────────
