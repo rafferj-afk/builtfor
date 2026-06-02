@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-nocheck — Deno runtime file, not Node.js
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -6,7 +6,7 @@ const cors = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
@@ -184,7 +184,7 @@ function buildEmail(results: any[], totalAnalysed: number): string {
         <!-- CTA -->
         <tr>
           <td style="padding:40px 0 8px;">
-            <a href="https://rafferj-afk.github.io/builtfor/" style="display:block;background:#c8ff3d;color:#000;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;text-decoration:none;padding:20px 28px;text-align:center;">SEE ALL YOUR RESULTS &#8594;</a>
+            <a href="https://builtfor.fit" style="display:block;background:#c8ff3d;color:#000;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;text-decoration:none;padding:20px 28px;text-align:center;">SEE ALL YOUR RESULTS &#8594;</a>
           </td>
         </tr>
         <tr>
@@ -198,7 +198,7 @@ function buildEmail(results: any[], totalAnalysed: number): string {
           <td style="padding-top:24px;border-top:1px solid #1a1a1a;">
             <p style="font-family:'Courier New',Courier,monospace;font-size:10px;color:#333;line-height:2;text-transform:uppercase;letter-spacing:0.1em;margin:0;">
               BUILTFOR &nbsp;·&nbsp; Sport-match engine &nbsp;·&nbsp; ${totalAnalysed} sports in database<br>
-              <a href="https://rafferj-afk.github.io/builtfor/" style="color:#444;text-decoration:none;">rafferj-afk.github.io/builtfor</a>
+              <a href="https://builtfor.fit" style="color:#444;text-decoration:none;">rafferj-afk.github.io/builtfor</a>
             </p>
           </td>
         </tr>
