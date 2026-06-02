@@ -2298,8 +2298,23 @@ async function captureEmail(email) {
       if (state.responseId) await sb.from('responses').update({ email }).eq('id', state.responseId);
     }
   } catch (e) { /* silent */ }
+  sendResultsEmail(email); // fire-and-forget — never blocks unlock
   saveProgress();
   return true;
+}
+
+async function sendResultsEmail(email) {
+  try {
+    const top10 = (state.results.overall || []).slice(0, 10).map(r => ({
+      sport: r.sport.sport,
+      total: Math.round(r.total),
+      builtFor: Math.round(r.builtFor),
+      enjoyment: Math.round(r.enjoyment),
+    }));
+    await sb.functions.invoke('send-results-email', {
+      body: { email, topResults: top10, totalAnalysed: SPORTS_DATA.length },
+    });
+  } catch (e) { /* silent — email failure never blocks unlock */ }
 }
 
 function unlockDeck() {
