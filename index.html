@@ -1748,6 +1748,56 @@ input[type="range"]::-moz-range-thumb {
 }
 .about-data-link:hover { color: var(--accent); }
 
+/* ── Unlock gate ── */
+.card-locked {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.5;
+}
+.unlock-gate {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 20px;
+  margin: 8px 0 16px;
+  text-align: center;
+}
+.unlock-gate-title {
+  font-family: 'Anton', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.unlock-gate-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.unlock-form { display: flex; flex-direction: column; gap: 10px; }
+.unlock-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 14px 16px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+}
+.unlock-input:focus { border-color: var(--accent); }
+.unlock-input::placeholder { color: var(--text-dimmer); }
+.unlock-error {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #f0a500;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
 /* BMI warning */
 .bmi-warning {
   font-family: 'JetBrains Mono', monospace;
@@ -1768,6 +1818,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -2198,12 +2249,93 @@ const SPORTS_DATA = [{"id":"SP01","sport":"Soccer (football)","position":"Outfie
 <script>
 
 /* ============================================================
+   SUPABASE
+   ============================================================ */
+
+const SUPABASE_URL = 'https://pihmmdjfqmxnentdvgok.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpaG1tZGpmcW14bmVudGR2Z29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDk5NDgsImV4cCI6MjA5NTk4NTk0OH0.9OmgfDiVcUKt9vyWMiaHucgVK7CtwLFY2j8fde9wd4I';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function getSessionId() {
+  try {
+    let id = localStorage.getItem('builtfor_session');
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+      localStorage.setItem('builtfor_session', id);
+    }
+    return id;
+  } catch (e) { return Date.now().toString(36); }
+}
+
+async function saveAnonymousResponse() {
+  try {
+    const top10 = (state.results.overall || []).slice(0, 10).map(r => ({
+      id: r.sport.id, sport: r.sport.sport,
+      total: Math.round(r.total), builtFor: Math.round(r.builtFor), enjoyment: Math.round(r.enjoyment),
+    }));
+    const { data } = await sb.from('responses').insert({
+      session_id: state.sessionId,
+      email: state.userEmail || null,
+      answers: state.answers,
+      top_results: top10,
+    }).select('id').single();
+    if (data) state.responseId = data.id;
+  } catch (e) { /* silent */ }
+}
+
+async function captureEmail(email) {
+  email = (email || '').trim().toLowerCase();
+  if (!email || !email.includes('@') || !email.includes('.')) return false;
+  state.userEmail = email;
+  state.unlocked = true;
+  try { localStorage.setItem('builtfor_email', email); } catch (e) {}
+  try {
+    if (state.responseId) {
+      await sb.from('responses').update({ email }).eq('id', state.responseId);
+    } else {
+      await saveAnonymousResponse();
+      if (state.responseId) await sb.from('responses').update({ email }).eq('id', state.responseId);
+    }
+  } catch (e) { /* silent */ }
+  saveProgress();
+  return true;
+}
+
+function unlockDeck() {
+  document.querySelectorAll('.card-locked').forEach(el => el.classList.remove('card-locked'));
+  const gate = document.getElementById('unlock-gate');
+  if (gate) gate.remove();
+}
+
+async function handleUnlockSubmit() {
+  const input = document.getElementById('unlock-email');
+  if (!input) return;
+  const btn = input.closest('.unlock-gate').querySelector('button');
+  btn.textContent = 'UNLOCKING...';
+  btn.disabled = true;
+  const ok = await captureEmail(input.value);
+  if (ok) {
+    unlockDeck();
+  } else {
+    btn.textContent = 'UNLOCK →';
+    btn.disabled = false;
+    let err = document.getElementById('unlock-err');
+    if (!err) { err = document.createElement('p'); err.id = 'unlock-err'; err.className = 'unlock-error'; input.after(err); }
+    err.textContent = 'Enter a valid email address.';
+  }
+}
+
+/* ============================================================
    STATE
    ============================================================ */
 
 const state = {
   currentScreen: 'welcome',
   questionIndex: 0,
+  sessionId: getSessionId(),
+  unlocked: (function() { try { return !!localStorage.getItem('builtfor_email'); } catch(e) { return false; } })(),
+  userEmail: (function() { try { return localStorage.getItem('builtfor_email') || null; } catch(e) { return null; } })(),
+  responseId: null,
   answers: {
     sex: null,
     age: null,
@@ -3618,6 +3750,7 @@ function runScoring() {
     state.results.enjoy = [...scored].filter(s => s.enjoyment > 0).sort((a, b) => b.enjoyment - a.enjoyment).slice(0, 15);
 
     saveProgress();
+    saveAnonymousResponse();
     renderResults();
     showScreen('results');
   }, 2800);
@@ -3735,6 +3868,29 @@ function renderTab(tab) {
 
   scroll.innerHTML = visible.map((r, i) => buildCardHtml(r, i, tab, primaryKey)).join('');
 
+  // Sign-up wall: lock cards 4+ if not unlocked
+  if (!state.unlocked) {
+    const cards = scroll.querySelectorAll('.athlete-card');
+    cards.forEach((card, i) => { if (i >= 3) card.classList.add('card-locked'); });
+    // Inject gate after card 3 (if there are more than 3 results)
+    if (results.length > 3) {
+      const card3 = cards[3];
+      const remaining4plus = results.length - 3;
+      const gateEl = document.createElement('div');
+      gateEl.id = 'unlock-gate';
+      gateEl.className = 'unlock-gate';
+      gateEl.innerHTML = `
+        <div class="unlock-gate-title">◆ ${remaining4plus} MORE MATCHES</div>
+        <p class="unlock-gate-sub">Enter your email to unlock your full results.<br>Free. No spam.</p>
+        <div class="unlock-form">
+          <input type="email" id="unlock-email" class="unlock-input" placeholder="your@email.com" autocomplete="email">
+          <button class="btn" onclick="handleUnlockSubmit()">UNLOCK FREE →</button>
+        </div>`;
+      if (card3) scroll.insertBefore(gateEl, card3);
+      else scroll.appendChild(gateEl);
+    }
+  }
+
   if (remaining > 0) {
     const btn = document.createElement('button');
     btn.className = 'btn ghost show-more-btn';
@@ -3745,6 +3901,7 @@ function renderTab(tab) {
       rest.forEach((r, j) => {
         const tmp = document.createElement('div');
         tmp.innerHTML = buildCardHtml(r, PAGE + j, tab, primaryKey);
+        if (!state.unlocked) tmp.firstElementChild.classList.add('card-locked');
         frag.appendChild(tmp.firstElementChild);
       });
       scroll.removeChild(btn);
@@ -4086,6 +4243,8 @@ function saveProgress() {
       results: state.results,
       currentTab: state.currentTab,
       questionIndex: state.questionIndex,
+      unlocked: state.unlocked,
+      userEmail: state.userEmail,
       timestamp: Date.now(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -4158,6 +4317,7 @@ function attemptRestore() {
   if (!saved || !saved.answers) return;
   state.answers     = saved.answers;
   state.questionIndex = saved.questionIndex || 0;
+  if (saved.unlocked) { state.unlocked = true; state.userEmail = saved.userEmail || state.userEmail; }
   if (saved._kind === 'completed') {
     state.results = saved.results;
     state.currentTab = saved.currentTab || 'overall';
