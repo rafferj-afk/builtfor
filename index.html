@@ -1749,6 +1749,11 @@ input[type="range"]::-moz-range-thumb {
 .about-data-link:hover { color: var(--accent); }
 
 /* ── Unlock gate ── */
+.card-locked {
+  filter: blur(12px);
+  pointer-events: none;
+  user-select: none;
+}
 .unlock-gate {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2296,9 +2301,9 @@ async function captureEmail(email) {
 }
 
 function unlockDeck() {
+  document.querySelectorAll('.card-locked').forEach(el => el.classList.remove('card-locked'));
   const gate = document.getElementById('unlock-gate');
   if (gate) gate.remove();
-  renderTab(state.currentTab);
 }
 
 async function handleUnlockSubmit() {
@@ -3860,9 +3865,12 @@ function renderTab(tab) {
   const visible = results.slice(0, PAGE);
   const remaining = results.length - PAGE;
 
-  // Sign-up wall: show only top 3, solid gate below — no blurred cards
+  scroll.innerHTML = visible.map((r, i) => buildCardHtml(r, i, tab, primaryKey)).join('');
+
+  // Sign-up wall: blur cards 4+, inject gate between card 3 and blurred cards
   if (!state.unlocked && results.length > 3) {
-    scroll.innerHTML = results.slice(0, 3).map((r, i) => buildCardHtml(r, i, tab, primaryKey)).join('');
+    const cards = scroll.querySelectorAll('.athlete-card');
+    cards.forEach((card, i) => { if (i >= 3) card.classList.add('card-locked'); });
     const hiddenCount = results.length - 3;
     const gateEl = document.createElement('div');
     gateEl.id = 'unlock-gate';
@@ -3874,11 +3882,9 @@ function renderTab(tab) {
         <input type="email" id="unlock-email" class="unlock-input" placeholder="your@email.com" autocomplete="email">
         <button class="btn" onclick="handleUnlockSubmit()">UNLOCK FREE →</button>
       </div>`;
-    scroll.appendChild(gateEl);
-    return;
+    if (cards[3]) scroll.insertBefore(gateEl, cards[3]);
+    else scroll.appendChild(gateEl);
   }
-
-  scroll.innerHTML = visible.map((r, i) => buildCardHtml(r, i, tab, primaryKey)).join('');
 
   if (remaining > 0) {
     const btn = document.createElement('button');
