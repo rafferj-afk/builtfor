@@ -4,11 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>BUILTFOR: find what you're built for</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="description" content="Your body suits something. BUILTFOR compares your measurements against elite athletes across 75 sports and tells you what. 15 questions, ~3 minutes.">
+<link rel="canonical" href="https://builtfor.fit/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://builtfor.fit/">
+<meta property="og:title" content="BUILTFOR — find what you're built for">
+<meta property="og:description" content="Compare your measurements against elite athletes across 75 sports. 15 questions, ~3 minutes.">
+<meta property="og:image" content="https://builtfor.fit/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BUILTFOR — find what you're built for">
+<meta name="twitter:description" content="Compare your measurements against elite athletes across 75 sports.">
+<meta name="twitter:image" content="https://builtfor.fit/og-image.png">
 <style>
+@font-face{font-family:'Anton';src:url('./fonts/anton.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('./fonts/archivo.woff2') format('woff2');font-weight:400 900;font-style:normal;font-display:swap}
+@font-face{font-family:'JetBrains Mono';src:url('./fonts/jetbrains-mono.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 /* ============================================================
    BUILTFOR — sport-matcher prototype
    Aesthetic direction: FIFA Ultimate Team meets Nike Run Club
@@ -21,7 +36,7 @@
   --surface: #1c1c1c;
   --text: #f5f5f5;
   --text-dim: #8a8a8a;
-  --text-dimmer: #7a7a7a;
+  --text-dimmer: #868686; /* min for 4.5:1 on --surface; was #7a7a7a (failed AA on elevated surfaces) */
   --accent: #c8ff3d;            /* electric lime — performance, athletic */
   --accent-hot: #ffd83d;          /* gold — elite tier */
   --accent-fire: #ff5e3d;         /* signal red for warnings/exclusion */
@@ -1540,6 +1555,35 @@ input[type="range"]::-moz-range-thumb {
 /* The 'sex assigned at birth' question's help paragraph needs to feel like a clarifier */
 .q-card .help em { font-style: italic; opacity: 0.85; }
 
+/* Visually-hidden utility (screen-reader only) */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Back button in quiz topbar */
+.quiz-back-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.quiz-back-btn:hover,
+.quiz-back-btn:focus-visible {
+  color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* Scroll hint — pulsing chevron over the first card */
 .scroll-hint {
   position: absolute;
@@ -1798,6 +1842,43 @@ input[type="range"]::-moz-range-thumb {
   text-align: center;
   letter-spacing: 0.05em;
 }
+.unlock-helper {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dimmer);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+.unlock-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: left;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.unlock-consent input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); }
+.unlock-consent a { color: var(--accent); text-decoration: none; }
+.unlock-consent a:hover { text-decoration: underline; }
+
+/* Low-confidence results banner */
+.low-confidence-banner {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 0 0 12px;
+  text-align: center;
+  line-height: 1.6;
+  letter-spacing: 0.03em;
+}
 
 /* BMI warning */
 .bmi-warning {
@@ -1839,10 +1920,10 @@ input[type="range"]::-moz-range-thumb {
         SOMETHING.
       </h1>
       <p class="welcome-sub">
-        Your body suits something. We compare your measurements against elite athletes in 158 sports and tell you what.
+        Your body suits something. We compare your measurements against elite athletes across 75 sports (158 athlete profiles) and tell you what.
       </p>
       <div class="welcome-meta">
-        <span>158 SPORTS</span>
+        <span>75 SPORTS · 158 PROFILES</span>
         <span>15 QUESTIONS</span>
         <span>~3 MIN</span>
       </div>
@@ -1860,10 +1941,13 @@ input[type="range"]::-moz-range-thumb {
   <!-- ========== SCREEN 2: QUESTIONS ========== -->
   <section class="screen" id="quiz">
     <div class="topbar">
-      <span class="logo">BUILTFOR</span>
+      <button class="quiz-back-btn" id="quiz-back-btn" onclick="previousQuestion()" aria-label="Go to previous question" style="display:none">← BACK</button>
+      <span class="logo" id="quiz-logo">BUILTFOR</span>
       <div class="topbar-right">
         <button class="edit-done-btn" id="edit-done-btn" onclick="finishEdit()" style="display:none">DONE · RE-SCORE</button>
-        <span class="step mono" id="step-counter">01 / 16</span>
+        <span class="step mono" id="step-counter"
+          role="progressbar" aria-valuemin="1" aria-valuemax="15" aria-valuenow="1"
+          aria-label="Question 1 of 15">01 / 15</span>
       </div>
     </div>
     <div class="progress-track">
@@ -1884,15 +1968,15 @@ input[type="range"]::-moz-range-thumb {
   </section>
 
   <!-- ========== SCREEN 3: COMPUTING ========== -->
-  <section class="screen" id="computing">
+  <section class="screen" id="computing" aria-live="polite" aria-label="Analysing your profile">
     <div class="compute-vis">
       <div class="compute-radar"></div>
       <div class="compute-ring"></div>
       <div class="compute-ring"></div>
       <div class="compute-ring"></div>
-      <div class="compute-count" id="compute-count">157</div>
+      <div class="compute-count" id="compute-count" aria-hidden="true">157</div>
     </div>
-    <p class="compute-text">ANALYSING YOUR PROFILE</p>
+    <p class="compute-text" aria-hidden="true">ANALYSING YOUR PROFILE</p>
     <p class="compute-status mono" id="compute-status">comparing to elite athletes...</p>
   </section>
 
@@ -1900,7 +1984,7 @@ input[type="range"]::-moz-range-thumb {
   <section class="screen" id="results">
     <div class="topbar">
       <span class="logo">BUILTFOR</span>
-      <span class="step mono" id="results-meta"></span>
+      <span class="step mono" id="results-meta" aria-live="polite"></span>
     </div>
 
     <div class="tier-tabs">
@@ -2333,7 +2417,7 @@ async function handleUnlockSubmit() {
   if (ok) {
     unlockDeck();
   } else {
-    btn.textContent = 'UNLOCK →';
+    btn.textContent = 'UNLOCK FREE →';
     btn.disabled = false;
     let err = document.getElementById('unlock-err');
     if (!err) { err = document.createElement('p'); err.id = 'unlock-err'; err.className = 'unlock-error'; input.after(err); }
@@ -2382,6 +2466,7 @@ const state = {
     enjoy: [],
     overall: [],
   },
+  lowConfidence: false,
   currentTab: 'overall',
   editing: false,
 };
@@ -2842,9 +2927,17 @@ function renderQuestion() {
   }
 
   const q = questions[idx];
-  document.getElementById('step-counter').textContent =
-    String(idx + 1).padStart(2, '0') + ' / ' + String(questions.length).padStart(2, '0');
+  const counter = document.getElementById('step-counter');
+  counter.textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(questions.length).padStart(2, '0');
+  counter.setAttribute('aria-valuenow', String(idx + 1));
+  counter.setAttribute('aria-valuemax', String(questions.length));
+  counter.setAttribute('aria-label', 'Question ' + (idx + 1) + ' of ' + questions.length);
   document.getElementById('progress-fill').style.width = ((idx + 1) / questions.length * 100) + '%';
+
+  const backBtn = document.getElementById('quiz-back-btn');
+  const quizLogo = document.getElementById('quiz-logo');
+  if (backBtn) backBtn.style.display = idx > 0 ? '' : 'none';
+  if (quizLogo) quizLogo.style.display = idx > 0 ? 'none' : '';
 
   const card = document.createElement('div');
   card.className = 'q-card';
@@ -2868,9 +2961,11 @@ function renderQuestion() {
           catHtml +
         '</div>' +
         '<div class="slider-stepper">' +
-          '<button class="stepper-btn" onclick="stepSlider(-1)">−</button>' +
-          '<input type="range" min="' + q.min + '" max="' + q.max + '" step="' + q.step + '" value="' + initial + '" id="slider-input">' +
-          '<button class="stepper-btn" onclick="stepSlider(1)">+</button>' +
+          '<button class="stepper-btn" onclick="stepSlider(-1)" aria-label="Decrease">−</button>' +
+          '<input type="range" min="' + q.min + '" max="' + q.max + '" step="' + q.step + '" value="' + initial +
+            '" id="slider-input" aria-label="' + q.question.replace(/"/g, '&quot;') +
+            '" aria-valuetext="' + initial + '">' +
+          '<button class="stepper-btn" onclick="stepSlider(1)" aria-label="Increase">+</button>' +
         '</div>' +
       '</div>' +
       '<button class="btn" style="margin-top: 24px;" onclick="confirmAnswer()">CONFIRM</button>';
@@ -2891,9 +2986,11 @@ function renderQuestion() {
             '<span class="multi-slider-value" id="ms-val-' + s.id + '">' + initial + ' <em>' + s.unit + '</em></span>' +
           '</div>' +
           '<div class="slider-stepper">' +
-            '<button class="stepper-btn" onclick="stepMultiSlider(\'' + s.id + '\',-1)">−</button>' +
-            '<input type="range" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '" value="' + initial + '" data-msid="' + s.id + '" class="multi-slider-input">' +
-            '<button class="stepper-btn" onclick="stepMultiSlider(\'' + s.id + '\',1)">+</button>' +
+            '<button class="stepper-btn" onclick="stepMultiSlider(\'' + s.id + '\',-1)" aria-label="Decrease ' + s.label + '">−</button>' +
+            '<input type="range" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '" value="' + initial +
+              '" data-msid="' + s.id + '" class="multi-slider-input" aria-label="' + s.label.replace(/"/g, '&quot;') +
+              '" aria-valuetext="' + initial + '">' +
+            '<button class="stepper-btn" onclick="stepMultiSlider(\'' + s.id + '\',1)" aria-label="Increase ' + s.label + '">+</button>' +
           '</div>' +
           ((!q.compact && s.help) ? '<p class="multi-slider-help">' + s.help + '</p>' : '') +
         '</div>';
@@ -2986,6 +3083,7 @@ function renderQuestion() {
   if (slider) {
     slider.addEventListener('input', function(e) {
       const v = +e.target.value;
+      e.target.setAttribute('aria-valuetext', String(v));
       state.answers[q.id] = v;
       const valEl = card.querySelector('#slider-val');
       if (valEl) valEl.textContent = v;
@@ -3004,6 +3102,7 @@ function renderQuestion() {
     input.addEventListener('input', function(e) {
       const id = e.target.dataset.msid;
       const v = +e.target.value;
+      e.target.setAttribute('aria-valuetext', String(v));
       state.answers[id] = v;
       const out = card.querySelector('#ms-val-' + id);
       if (out) {
@@ -3054,6 +3153,13 @@ function renderQuestion() {
 
   // Wire vertical scroll gestures
   enableScroll(card);
+
+  // Move focus to the question heading so keyboard/SR users land in the right place
+  const heading = card.querySelector('h2.question');
+  if (heading) {
+    heading.setAttribute('tabindex', '-1');
+    setTimeout(function() { heading.focus({ preventScroll: true }); }, 50);
+  }
 }
 
 function selectChoice(value) {
@@ -3235,7 +3341,14 @@ function hideScrollHint() {
    Direct JavaScript port of the v1.3 Excel formulas
    ============================================================ */
 
-function computeBuiltFor(user, sport) {
+function computeBuiltFor(user, sport, detail) {
+  const height  = Number(user.height);
+  const weight  = Number(user.weight);
+  const bodyFat = Number(user.bodyFat);
+  const age     = Number(user.age);
+  if (isNaN(height) || isNaN(weight) || isNaN(bodyFat) || isNaN(age)) return 0;
+  user = { ...user, height, weight, bodyFat, age };
+
   // Same-sex filter (hard exclusion)
   if (user.sex !== sport.sex) return 0;
 
@@ -3288,6 +3401,7 @@ function computeBuiltFor(user, sport) {
   // Composite: physical 60% (weighted by category), demand 40%
   const wt = PHYSICAL_WEIGHTS[sport.category] || PHYSICAL_WEIGHTS.default;
   const physicalAvg = wt.h * heightFit + wt.w * weightFit + wt.bf * bfFit + wt.ws * wingspanFit;
+  if (detail) detail.physicalAvg = physicalAvg;
   const rawScore = 60 * physicalAvg + 0.4 * demandFit;
 
   // Trainability — age vs sport's developmental window.
@@ -3443,7 +3557,21 @@ function computeTrainability(user, sport) {
 
   // ageMul: 0 at age 30, 1.0 at age 65+
   const ageMul = Math.min(1, Math.max(0, (age - 30) / 35));
-  return Math.max(0.40, 1 - penalty * ageMul);
+  let trainability = Math.max(0.40, 1 - penalty * ageMul);
+
+  // Absolute-age decay for high-intensity sports (avg demand ≥ 6).
+  // Scales from 1.0 at age 70 down to ~0.6 at age 90, leaving low-demand
+  // sports (golf, darts, archery, bowls) unaffected.
+  if (age > 70) {
+    const vals = Object.values(d);
+    const avgDemand = vals.reduce((s, v) => s + v, 0) / vals.length;
+    if (avgDemand >= 6) {
+      const t = Math.min(1, (age - 70) / 20); // 0 at 70, 1 at 90
+      trainability *= (1 - 0.4 * t);          // 1.0 at 70 → 0.6 at 90
+    }
+  }
+
+  return trainability;
 }
 
 /* ============================================================
@@ -3721,7 +3849,7 @@ function runScoring() {
   const countEl = document.getElementById('compute-count');
 
   const stages = [
-    { text: 'checking 158 sports...',                   count: 158 },
+    { text: 'checking 75 sports / 158 profiles...',      count: 158 },
     { text: 'measuring against elite anthropometrics...', count: 83  },
     { text: 'weighing your preferences...',              count: 42  },
     { text: 'sorting your deck...',                      count: 15  },
@@ -3749,7 +3877,8 @@ function runScoring() {
     // (harmonic 70). This is the correct definition of "Best Overall": the
     // sport that's strongest on BOTH axes, not the one that's elite on one.
     const scored = SPORTS_DATA.map(sport => {
-      const builtFor = computeBuiltFor(state.answers, sport);
+      const detail = {};
+      const builtFor = computeBuiltFor(state.answers, sport, detail);
       const enjoyment = computeEnjoyment(state.answers, sport);
       const total = (builtFor === 0 || enjoyment === 0)
         ? 0
@@ -3758,10 +3887,12 @@ function runScoring() {
       const reasons = (builtFor === 0)
         ? { strengths: [], weakness: '' }
         : computeReasons(state.answers, sport, computeDemandAnalysis(state.answers, sport));
-      return { sport, builtFor, enjoyment, total, reasons };
+      return { sport, builtFor, enjoyment, total, reasons, physicalAvg: detail.physicalAvg ?? 0 };
     });
 
-    state.results.overall = [...scored].sort((a, b) => b.total - a.total).slice(0, 15);
+    const sortedOverall = [...scored].sort((a, b) => b.total - a.total);
+    state.lowConfidence = sortedOverall.length > 0 && (sortedOverall[0].physicalAvg ?? 0) < 0.35;
+    state.results.overall = sortedOverall.slice(0, 15);
     state.results.builtfor = [...scored].filter(s => s.enjoyment > 0).sort((a, b) => b.builtFor - a.builtFor).slice(0, 15);
     state.results.enjoy = [...scored].filter(s => s.enjoyment > 0).sort((a, b) => b.enjoyment - a.enjoyment).slice(0, 15);
 
@@ -3793,7 +3924,18 @@ function renderResults() {
   document.getElementById('count-overall').textContent = state.results.overall.length;
   document.getElementById('count-builtfor').textContent = state.results.builtfor.length;
   document.getElementById('count-enjoy').textContent = state.results.enjoy.length;
-  document.getElementById('results-meta').textContent = `${SPORTS_DATA.length} ANALYSED`;
+  document.getElementById('results-meta').textContent = `75 SPORTS · ${SPORTS_DATA.length} PROFILES ANALYSED`;
+
+  const existing = document.getElementById('low-confidence-banner');
+  if (existing) existing.remove();
+  if (state.lowConfidence) {
+    const banner = document.createElement('p');
+    banner.id = 'low-confidence-banner';
+    banner.className = 'low-confidence-banner';
+    banner.textContent = 'Your measurements sit outside the typical range for most sports — treat these matches as loose suggestions, not a verdict.';
+    const deck = document.getElementById('deck-scroll');
+    deck.parentNode.insertBefore(banner, deck);
+  }
 
   renderTab(state.currentTab);
 
@@ -3897,7 +4039,12 @@ function renderTab(tab) {
       <p class="unlock-gate-sub">Enter your email to unlock your full results.<br>Free. No spam.</p>
       <div class="unlock-form">
         <input type="email" id="unlock-email" class="unlock-input" placeholder="your@email.com" autocomplete="email">
-        <button class="btn" onclick="handleUnlockSubmit()">UNLOCK FREE →</button>
+        <p class="unlock-helper">We store your answers + email to email you your results. Nothing is sold or shared.</p>
+        <label class="unlock-consent">
+          <input type="checkbox" id="unlock-consent" onchange="document.getElementById('unlock-btn').disabled=!this.checked">
+          I agree to my answers and email being stored to send my results. See <a href="./privacy.html" target="_blank">Privacy</a>.
+        </label>
+        <button id="unlock-btn" class="btn" onclick="handleUnlockSubmit()" disabled>UNLOCK FREE →</button>
       </div>`;
     if (cards[3]) scroll.insertBefore(gateEl, cards[3]);
     else scroll.appendChild(gateEl);
@@ -4152,7 +4299,7 @@ function restartQuiz() {
 function populateShareCard() {
   const top3 = (state.results.overall || []).slice(0, 3);
   const meta = document.getElementById('sc-meta');
-  if (meta) meta.textContent = SPORTS_DATA.length + ' SPORTS ANALYSED';
+  if (meta) meta.textContent = '75 SPORTS · ' + SPORTS_DATA.length + ' PROFILES ANALYSED';
   const wrap = document.getElementById('sc-results');
   if (!wrap) return;
   wrap.innerHTML = top3.map((r, i) => {
@@ -4174,10 +4321,7 @@ async function shareCard() {
   if (typeof html2canvas !== 'function') {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-      s.integrity = 'sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==';
-      s.crossOrigin = 'anonymous';
-      s.referrerPolicy = 'no-referrer';
+      s.src = './vendor/html2canvas.min.js';
       s.onload = resolve;
       s.onerror = reject;
       document.head.appendChild(s);
@@ -4373,6 +4517,9 @@ function viewLastDeck() {
 
 attemptRestore();
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
 </script>
 
 </body>
