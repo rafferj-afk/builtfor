@@ -1748,6 +1748,25 @@ input[type="range"]::-moz-range-thumb {
 }
 .about-data-link:hover { color: var(--accent); }
 
+/* BMI warning */
+.bmi-warning {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #f0a500;
+  letter-spacing: 0.05em;
+  margin-top: 10px;
+  text-align: center;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -2843,6 +2862,21 @@ function renderQuestion() {
         const unitMatch = out.querySelector('em');
         const unit = unitMatch ? unitMatch.textContent : '';
         out.innerHTML = v + ' <em>' + unit + '</em>';
+      }
+      // BMI sanity check on the body question
+      if (state.answers.height && state.answers.weight) {
+        const bmi = state.answers.weight / Math.pow(state.answers.height / 100, 2);
+        let warn = card.querySelector('.bmi-warning');
+        if (bmi < 13 || bmi > 50) {
+          if (!warn) {
+            warn = document.createElement('p');
+            warn.className = 'bmi-warning';
+            card.querySelector('.q-body').appendChild(warn);
+          }
+          warn.textContent = '⚠ BMI ' + bmi.toFixed(1) + ' — double-check your numbers?';
+        } else if (warn) {
+          warn.remove();
+        }
       }
     });
   });
