@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0a">
-<title>BUILTFOR — find what you're built for</title>
+<title>BUILTFOR: find what you're built for</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -576,7 +576,7 @@ input[type="range"]::-moz-range-thumb {
 
 .tier-tab-sub {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: none;
@@ -820,7 +820,7 @@ input[type="range"]::-moz-range-thumb {
 
 .stat-key {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -1081,7 +1081,7 @@ input[type="range"]::-moz-range-thumb {
 
 .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .fit-cell { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 12px; padding: 14px 14px 12px; }
-.fit-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: var(--text-dimmer); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.fit-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: var(--text-dimmer); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .fit-dot { font-size: 10px; color: rgba(255,255,255,0.2); }
 .fit-dot.match { color: var(--accent); }
 .fit-val { font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 26px; line-height: 1; color: #fff; }
@@ -1763,9 +1763,11 @@ input[type="range"]::-moz-range-thumb {
   text-align: center;
 }
 .unlock-gate-title {
-  font-family: 'Anton', sans-serif;
-  font-size: 22px;
-  letter-spacing: 0.04em;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin-bottom: 8px;
 }
 .unlock-gate-sub {
@@ -4194,7 +4196,7 @@ async function shareCard() {
           await navigator.share({
             files: [file],
             title: 'BUILTFOR',
-            text: 'What I\'m built for — find yours at builtfor.netlify.app',
+            text: 'What I\'m built for. Find yours at rafferj-afk.github.io/builtfor',
           });
         } catch (e) {
           // user cancelled — silent
