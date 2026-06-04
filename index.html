@@ -1806,26 +1806,90 @@ input[type="range"]::-moz-range-thumb {
   user-select: none;
 }
 .unlock-gate {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 32px 20px;
+  background: linear-gradient(160deg, #0f0f0f 0%, #1a1a1a 60%, #0f0f0f 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-top: 2px solid var(--accent);
+  border-radius: 18px;
+  padding: 24px 20px 20px;
   margin: 8px 0 16px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
-.unlock-gate-title {
-  font-family: 'Archivo', sans-serif;
+.unlock-gate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% -20%, rgba(200,255,61,0.07), transparent 60%);
+  pointer-events: none;
+}
+.unlock-gate-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
   font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  margin-bottom: 8px;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.unlock-gate-hero {
+  font-family: 'Anton', sans-serif;
+  font-size: 80px;
+  line-height: 1;
+  color: var(--accent);
+  text-shadow: 0 0 48px rgba(200,255,61,0.35);
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+.unlock-gate-hero-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+.unlock-gate-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.unlock-gate-stat {
+  flex: 1;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.unlock-gate-stat + .unlock-gate-stat {
+  border-left: 1px solid var(--border);
+}
+.unlock-gate-stat-val {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text);
+}
+.unlock-gate-stat-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dimmer);
 }
 .unlock-gate-sub {
   font-size: 13px;
   color: var(--text-dim);
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .unlock-form { display: flex; flex-direction: column; gap: 10px; }
 .unlock-input {
@@ -1905,6 +1969,109 @@ input[type="range"]::-moz-range-thumb {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ============= CARD DIAGNOSTIC NOTES ============= */
+.card-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  padding: 6px 0 0;
+  color: var(--text-dimmer);
+}
+.card-note.warn { color: #f0a500; }
+
+/* ============= SCORE BREAKDOWN EXPANDABLE ============= */
+.card-breakdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-dimmer);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 0 0;
+  margin-top: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.card-breakdown-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.breakdown-arrow { transition: transform 0.2s ease; font-size: 10px; display: inline-block; }
+.breakdown-arrow.open { transform: rotate(180deg); }
+
+.card-breakdown-body { display: none; padding-top: 10px; }
+.card-breakdown-body.open { display: block; }
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.breakdown-cell {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.breakdown-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-dimmer);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.breakdown-val {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
+}
+.breakdown-val.accent { color: var(--accent); }
+.breakdown-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dimmer);
+  margin-top: 4px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+}
+
+/* ============= HARMONIC MEAN NOTE (once, top of overall deck) ============= */
+.harmonic-note {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.55;
+  color: var(--text-dimmer);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+.harmonic-note-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-dimmer);
+  cursor: pointer;
+  font-size: 15px;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+  margin-top: -1px;
+}
+.harmonic-note-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2478,6 +2645,7 @@ const state = {
   lowConfidence: false,
   currentTab: 'overall',
   editing: false,
+  harmonicDismissed: false,
 };
 
 /* Body-fat level guide — sex-specific thresholds */
@@ -3602,6 +3770,24 @@ const DIM_LABELS = {
   reaction: 'reaction',
 };
 
+const DIM_LABELS_FRIENDLY = {
+  aerobic:     'Aerobic capacity',
+  anaerobic:   'Anaerobic endurance',
+  maxStrength: 'Max strength',
+  power:       'Explosive power',
+  speed:       'Speed',
+  flexibility: 'Flexibility',
+  coordination:'Coordination',
+  reaction:    'Reaction time',
+};
+
+const IS_DEV = (function() {
+  try {
+    const h = window.location.hostname;
+    return h === 'localhost' || h === '127.0.0.1' || h === '';
+  } catch(e) { return false; }
+})();
+
 function computeReasons(user, sport, demandAnalysis) {
   const strengths = [];
   const weaknesses = [];
@@ -3700,7 +3886,7 @@ function computeInjuryFit(injury, contact, injuryRisk) {
   return 1.0;
 }
 
-function computeEnjoyment(user, sport) {
+function computeEnjoyment(user, sport, detail) {
   // Sex filter (hard exclusion)
   if (user.sex !== sport.sex) return 0;
 
@@ -3827,8 +4013,20 @@ function computeEnjoyment(user, sport) {
 
   const ageFit    = computeAgeFit(user.age, c.contact, c.injuryRisk);
   const injuryFit = computeInjuryFit(user.injury, c.contact, c.injuryRisk);
-  const finalScore = baseScore * categoryBoost * experienceFit * ageFit * injuryFit * youthFit;
-  return Math.round(Math.min(100, finalScore) * 10) / 10;
+  const preBoostScore = Math.min(100, baseScore * experienceFit * ageFit * injuryFit * youthFit);
+  const finalScore    = Math.min(100, baseScore * categoryBoost * experienceFit * ageFit * injuryFit * youthFit);
+
+  // Hard budget gate: Low budget + High equipment cost → enjoyment capped at 60
+  const hardBudgetGate = userBudget === 1 && sportBudget === 3;
+  const cappedScore = (hardBudgetGate && finalScore > 60) ? 60 : finalScore;
+
+  if (detail) {
+    detail.categoryBoost = categoryBoost;
+    detail.preBoostScore = Math.round(preBoostScore * 10) / 10;
+    detail.budgetCapped  = hardBudgetGate;
+  }
+
+  return Math.round(cappedScore * 10) / 10;
 }
 
 function typewrite(el, text) {
@@ -3889,16 +4087,47 @@ function runScoring() {
     // sport that's strongest on BOTH axes, not the one that's elite on one.
     const scored = SPORTS_DATA.map(sport => {
       const detail = {};
-      const builtFor = computeBuiltFor(state.answers, sport, detail);
-      const enjoyment = computeEnjoyment(state.answers, sport);
+      const enjoymentDetail = {};
+      const builtFor  = computeBuiltFor(state.answers, sport, detail);
+      const enjoyment = computeEnjoyment(state.answers, sport, enjoymentDetail);
       const total = (builtFor === 0 || enjoyment === 0)
         ? 0
         : Math.round(((2 * builtFor * enjoyment) / (builtFor + enjoyment)) * 10) / 10;
-      // Skip reasons for excluded sports (sex/water gate)
+
+      const demandAnalysis = builtFor > 0 ? computeDemandAnalysis(state.answers, sport) : null;
       const reasons = (builtFor === 0)
         ? { strengths: [], weakness: '' }
-        : computeReasons(state.answers, sport, computeDemandAnalysis(state.answers, sport));
-      return { sport, builtFor, enjoyment, total, reasons, physicalAvg: detail.physicalAvg ?? 0 };
+        : computeReasons(state.answers, sport, demandAnalysis);
+
+      // Limiting factor: the critical demand dim with the lowest fit
+      let limitingFactor = null;
+      if (demandAnalysis) {
+        const critDims = demandAnalysis.perDim.filter(r => r.critical);
+        const worstCrit = critDims.reduce((w, r) => (!w || r.fit < w.fit) ? r : w, null);
+        if (worstCrit && worstCrit.fit < 0.5) limitingFactor = worstCrit.key;
+      }
+
+      const trainability  = computeTrainability(state.answers, sport);
+      const categoryBoost = enjoymentDetail.categoryBoost || 1.0;
+
+      if (IS_DEV && categoryBoost > 1.0) {
+        console.log('[BUILTFOR boost]', sport.sport, sport.position || '', {
+          preBoost:  enjoymentDetail.preBoostScore,
+          postBoost: Math.round(enjoyment * 10) / 10,
+          overall:   total,
+          boost:     categoryBoost + '×',
+        });
+      }
+
+      return {
+        sport, builtFor, enjoyment, total, reasons,
+        physicalAvg:  detail.physicalAvg ?? 0,
+        demandFit:    demandAnalysis ? demandAnalysis.fit : 0,
+        limitingFactor,
+        trainability,
+        categoryBoost,
+        budgetCapped: enjoymentDetail.budgetCapped || false,
+      };
     });
 
     const sortedOverall = [...scored].sort((a, b) => b.total - a.total);
@@ -3992,6 +4221,52 @@ function buildCardHtml(r, i, tab, primaryKey) {
       <span class="cdb-val">${sportVal}/10</span>
     </div>`;
   }).join('');
+  // Diagnostic notes (muted secondary colour)
+  const notesHtml = [
+    r.limitingFactor
+      ? `<div class="card-note">Limiting factor: ${DIM_LABELS_FRIENDLY[r.limitingFactor] || r.limitingFactor}.</div>`
+      : '',
+    (r.trainability !== undefined && r.trainability < 0.85 && r.builtFor > 0)
+      ? `<div class="card-note warn">Elite pathway: narrow at your age — recreational enjoyment still available.</div>`
+      : '',
+    r.budgetCapped
+      ? `<div class="card-note warn">High entry cost may limit access at your stated budget.</div>`
+      : '',
+  ].join('');
+
+  // Expandable score breakdown
+  const physFit    = Math.round((r.physicalAvg || 0) * 100);
+  const demFit     = Math.round(r.demandFit || 0);
+  const enjoyRnd   = Math.round(r.enjoyment || 0);
+  const totalRnd   = Math.round(r.total || 0);
+  const trainStr   = r.trainability !== undefined ? r.trainability.toFixed(2) : '1.00';
+  const boostStr   = r.categoryBoost > 1.0 ? 'Yes' : 'No';
+  const breakdownHtml = `
+    <button class="card-breakdown-toggle" onclick="toggleBreakdown(this,event)" aria-expanded="false">
+      SCORE BREAKDOWN <span class="breakdown-arrow" aria-hidden="true">&#9662;</span>
+    </button>
+    <div class="card-breakdown-body" onclick="event.stopPropagation()">
+      <div class="breakdown-grid">
+        <div class="breakdown-cell">
+          <div class="breakdown-label">Physical Fit</div>
+          <div class="breakdown-val">${physFit}</div>
+        </div>
+        <div class="breakdown-cell">
+          <div class="breakdown-label">Demand Fit</div>
+          <div class="breakdown-val">${demFit}</div>
+        </div>
+        <div class="breakdown-cell">
+          <div class="breakdown-label">Enjoyment</div>
+          <div class="breakdown-val">${enjoyRnd}</div>
+        </div>
+        <div class="breakdown-cell">
+          <div class="breakdown-label">Overall</div>
+          <div class="breakdown-val accent">${totalRnd}</div>
+        </div>
+      </div>
+      <div class="breakdown-meta">Trainability: ${trainStr}&times; &nbsp;&middot;&nbsp; Category boost: ${boostStr}</div>
+    </div>`;
+
   return `
     <div class="athlete-card tier-${tier}" onclick="openDetail(${i}, '${tab}')">
       <div class="card-inner">
@@ -4014,10 +4289,21 @@ function buildCardHtml(r, i, tab, primaryKey) {
           <span class="legend-item"><span class="legend-swatch legend-swatch-sport"></span>SPORT DEMAND</span>
           <span class="legend-item"><span class="legend-swatch legend-swatch-user"></span>YOUR LEVEL</span>
         </div>
-        <div class="card-footer">TAP TO READ THE BREAKDOWN <span>→</span></div>
+        ${notesHtml}
+        ${breakdownHtml}
+        <div class="card-footer">TAP FOR FULL BREAKDOWN <span>&#8594;</span></div>
       </div>
     </div>
   `;
+}
+
+function toggleBreakdown(btn, event) {
+  event.stopPropagation();
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector('.breakdown-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (arrow) arrow.classList.toggle('open', !isOpen);
 }
 
 function renderTab(tab) {
@@ -4041,6 +4327,14 @@ function renderTab(tab) {
 
   scroll.innerHTML = visible.map((r, i) => buildCardHtml(r, i, tab, primaryKey)).join('');
 
+  // Harmonic mean explainer — once at top of overall deck, dismissible
+  if (tab === 'overall' && !state.harmonicDismissed) {
+    const note = document.createElement('div');
+    note.className = 'harmonic-note';
+    note.innerHTML = `<span>Overall uses a harmonic mean: a sport must rank well on <em>both</em> physical fit and enjoyment to score highly.</span><button class="harmonic-note-dismiss" onclick="state.harmonicDismissed=true;this.parentNode.remove()" aria-label="Dismiss">&#215;</button>`;
+    scroll.insertBefore(note, scroll.firstChild);
+  }
+
   // Sign-up wall: blur cards 4+, inject gate between card 3 and blurred cards
   if (!state.unlocked && results.length > 3) {
     const cards = scroll.querySelectorAll('.athlete-card');
@@ -4050,16 +4344,30 @@ function renderTab(tab) {
     gateEl.id = 'unlock-gate';
     gateEl.className = 'unlock-gate';
     gateEl.innerHTML = `
-      <div class="unlock-gate-title">◆ ${hiddenCount} MORE MATCHES FOUND</div>
-      <p class="unlock-gate-sub">Enter your email to unlock your full results.<br>Free. No spam.</p>
+      <p class="unlock-gate-eyebrow">◆ Analysis complete</p>
+      <div class="unlock-gate-hero">${hiddenCount}</div>
+      <div class="unlock-gate-hero-label">more matches locked</div>
+      <div class="unlock-gate-stats">
+        <div class="unlock-gate-stat">
+          <span class="unlock-gate-stat-val">75</span>
+          <span class="unlock-gate-stat-key">Sports scored</span>
+        </div>
+        <div class="unlock-gate-stat">
+          <span class="unlock-gate-stat-val">158</span>
+          <span class="unlock-gate-stat-key">Elite profiles</span>
+        </div>
+        <div class="unlock-gate-stat">
+          <span class="unlock-gate-stat-val">Free</span>
+          <span class="unlock-gate-stat-key">No spam</span>
+        </div>
+      </div>
       <div class="unlock-form">
         <input type="email" id="unlock-email" class="unlock-input" placeholder="your@email.com" autocomplete="email">
-        <p class="unlock-helper">We store your answers + email to email you your results. Nothing is sold or shared.</p>
         <label class="unlock-consent">
           <input type="checkbox" id="unlock-consent" onchange="document.getElementById('unlock-btn').disabled=!this.checked">
           I agree to my answers and email being stored to send my results. See <a href="./privacy.html" target="_blank">Privacy</a>.
         </label>
-        <button id="unlock-btn" class="btn" onclick="handleUnlockSubmit()" disabled>UNLOCK FREE →</button>
+        <button id="unlock-btn" class="btn" onclick="handleUnlockSubmit()" disabled>SEE ALL ${hiddenCount} MATCHES →</button>
       </div>`;
     if (cards[3]) scroll.insertBefore(gateEl, cards[3]);
     else scroll.appendChild(gateEl);
