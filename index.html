@@ -1782,10 +1782,35 @@ input[type="range"]::-moz-range-thumb {
 .compound {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-top: 16px;
+  gap: 14px;
+  margin-top: 12px;
 }
-.compound-part { display: flex; flex-direction: column; gap: 8px; }
+.compound-part { display: flex; flex-direction: column; gap: 6px; }
+/* Segmented controls for preferences / practicalities */
+.pref-seg {
+  display: flex;
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.pref-seg-btn {
+  flex: 1;
+  padding: 12px 4px;
+  font-family: 'Archivo', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  border-left: 1px solid var(--border-bright);
+  transition: background 0.12s, color 0.12s;
+  line-height: 1.25;
+  min-width: 0;
+}
+.pref-seg-btn:first-child { border-left: none; }
+.pref-seg-btn.selected { background: var(--accent); color: #000; font-weight: 700; }
 .compound-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -1796,16 +1821,139 @@ input[type="range"]::-moz-range-thumb {
 }
 .compound-options {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 5px;
 }
 .compound-option {
-  flex: 1 1 auto;
-  padding: 12px 14px;
-  font-size: 13px;
+  flex: 1 1 0;
+  padding: 11px 4px;
+  font-size: 12px;
   min-width: 0;
   justify-content: center;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.3;
 }
+
+/* ── Quiz card visual accents ─────────────────────────────── */
+.q-card[data-cat="body"]           { --q-ribbon: #3b82f6; }
+.q-card[data-cat="physical"]       { --q-ribbon: #c8ff3d; }
+.q-card[data-cat="skill"]          { --q-ribbon: #f97316; }
+.q-card[data-cat="history"]        { --q-ribbon: #a855f7; }
+.q-card[data-cat="preferences"]    { --q-ribbon: #ec4899; }
+.q-card[data-cat="practicalities"] { --q-ribbon: #14b8a6; }
+.q-card[data-cat="location"]       { --q-ribbon: #6366f1; }
+.q-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, var(--q-ribbon, #c8ff3d) 45%, rgba(200,255,61,0.75) 82%, rgba(0,0,0,0.7) 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+.q-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(108deg, transparent 30%, rgba(255,255,255,0.025) 50%, transparent 70%);
+  animation: wCardShine 7s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+.q-card[data-cat="location"]       { --q-ribbon: #6366f1; }
+
+.q-card-wm {
+  position: absolute;
+  bottom: 16px; right: 20px;
+  font-family: 'Anton', sans-serif;
+  font-size: 88px;
+  line-height: 1;
+  color: rgba(255,255,255,0.038);
+  letter-spacing: -0.02em;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+/* Sex toggle */
+.sex-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+.sex-btn {
+  flex: 1;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text);
+  font-family: 'Archivo', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sex-btn.selected { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Body type grid */
+.body-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+.body-type-opt {
+  padding: 16px 12px;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 2px;
+}
+.body-type-opt.selected { background: rgba(200,255,61,0.10); border-color: var(--accent); }
+.bt-label { font-family: 'Archivo', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+.bt-desc  { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dimmer); letter-spacing: 0.04em; line-height: 1.4; }
+.body-type-opt.selected .bt-label { color: var(--accent); }
+.body-type-opt.selected .bt-desc  { color: rgba(200,255,61,0.6); }
+
+/* Sub-question block (inside multi-select) */
+.sub-question {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.sub-question-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.sub-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.sub-opt {
+  padding: 9px 14px;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text);
+  font-family: 'Archivo', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+  flex: 1 1 auto;
+  text-align: center;
+}
+.sub-opt.selected { background: var(--accent); color: #000; border-color: var(--accent); }
 
 /* Help text on questions — slightly tighter */
 .q-card .help {
@@ -2344,7 +2492,7 @@ input[type="range"]::-moz-range-thumb {
       <span class="step mono">SPORT-MATCH TEST</span>
     </div>
 
-    <p class="welcome-eyebrow">15 QUESTIONS · 75 SPORTS</p>
+    <p class="welcome-eyebrow">2 MINUTES · 158 SPORTS</p>
 
     <div class="welcome-headline">
       YOUR BODY WAS BUILT FOR <span class="welcome-slot-wrap"><span class="welcome-slot" id="welcome-slot">SWIMMING</span></span>.
@@ -2987,86 +3135,86 @@ function bfCategory(sex, val) {
    Each step is a card with the question + how it captures the answer
    ============================================================ */
 
+const BODY_TYPE_BF = {
+  M: { lean: 10, athletic: 15, average: 22, heavy: 30 },
+  F: { lean: 18, athletic: 22, average: 28, heavy: 35 },
+};
+
 const questions = [
-  {
-    id: 'sex',
-    eyebrow: 'REFERENCE',
-    question: 'Sex assigned at birth?',
-    help: 'Used to match against male or female elite-athlete profiles, since the science is sex-specific. This isn\'t a question about your identity.',
-    type: 'choice',
-    options: [
-      { label: 'Male', value: 'M' },
-      { label: 'Female', value: 'F' },
-    ],
-  },
   {
     id: 'body',
     eyebrow: 'BODY',
-    question: 'Your body, in three numbers.',
-    help: 'Be honest. The model handles all body types: accuracy beats vanity.',
-    type: 'multi-slider',
+    question: 'Your body.',
+    help: 'Be honest — accuracy beats vanity.',
+    type: 'sex-body',
+    cat: 'body',
     sliders: [
-      { id: 'height', label: 'HEIGHT', unit: 'CM', min: 140, max: 220, step: 1, default: 175 },
-      { id: 'weight', label: 'WEIGHT', unit: 'KG', min: 40, max: 180, step: 1, default: 75 },
-      { id: 'age',    label: 'AGE',    unit: 'YRS', min: 13, max: 75,  step: 1, default: 25 },
+      { id: 'height', label: 'HEIGHT', unit: 'CM',  min: 140, max: 220, step: 1, default: 175 },
+      { id: 'weight', label: 'WEIGHT', unit: 'KG',  min: 40,  max: 180, step: 1, default: 75  },
+      { id: 'age',    label: 'AGE',    unit: 'YRS', min: 13,  max: 75,  step: 1, default: 25  },
     ],
   },
   {
-    id: 'wingspanCat',
+    id: 'bodyType',
     eyebrow: 'BUILD',
-    question: 'How does your arm span compare to your height?',
-    help: 'Fingertip to fingertip vs top of head. Most people are roughly equal. Matters most for swimming, rowing, and combat sports.',
-    type: 'choice',
+    question: 'Body composition.',
+    help: 'Pick the closest match. No need to know your exact body fat.',
+    type: 'body-type',
+    cat: 'body',
     options: [
-      { label: 'Shorter than my height', value: 'shorter' },
-      { label: 'About the same', value: 'same' },
-      { label: 'A bit longer', value: 'longer' },
-      { label: 'Much longer (long reach)', value: 'much_longer' },
+      { value: 'lean',     label: 'Lean',        desc: 'Visibly defined, low body fat' },
+      { value: 'athletic', label: 'Athletic',     desc: 'Fit and muscular, some body fat' },
+      { value: 'average',  label: 'Average',      desc: 'Typical build, moderate fat' },
+      { value: 'heavy',    label: 'Heavy build',  desc: 'Larger frame or higher body fat' },
     ],
-  },
-  {
-    id: 'bodyFat',
-    eyebrow: 'COMPOSITION',
-    question: 'Body fat percentage?',
-    help: 'Best estimate. The level label updates as you drag. Visual estimate is fine.',
-    type: 'slider',
-    min: 4, max: 40, step: 1, unit: '%',
-    showCategory: true,
   },
   {
     id: 'fitness',
     eyebrow: 'PHYSICAL',
     question: 'Your physical engine.',
-    help: '1 = couldn\'t do it · 10 = elite. Drives every recommendation.',
+    help: "1 = couldn't do it · 10 = elite.",
     type: 'multi-slider',
     compact: true,
+    cat: 'physical',
     sliders: [
-      { id: 'aerobic',     label: 'AEROBIC',      help: '1 = out of breath on stairs · 5 = run 5k comfortably · 10 = sub-35min 10k',   unit: '/10', min: 1, max: 10, step: 1, default: 5 },
-      { id: 'anaerobic',   label: 'ANAEROBIC',    help: '1 = one sprint and done · 5 = handle repeated sprints in a game · 10 = elite interval athlete',  unit: '/10', min: 1, max: 10, step: 1, default: 5 },
-      { id: 'maxStrength', label: 'MAX STRENGTH', help: '1 = struggle with bodyweight · 5 = gym-regular, compound lifts · 10 = competitive powerlifter',            unit: '/10', min: 1, max: 10, step: 1, default: 5 },
-      { id: 'power',       label: 'POWER',        help: '1 = minimal explosiveness · 5 = decent jump, some spring · 10 = vertical leap and sprint power', unit: '/10', min: 1, max: 10, step: 1, default: 5 },
-      { id: 'speed',       label: 'SPEED',        help: '1 = slow jogger · 5 = faster than most in a casual race · 10 = sub-11s 100m',       unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'aerobic',     label: 'AEROBIC',      help: '1 = out of breath on stairs · 5 = run 5k comfortably · 10 = sub-35min 10k',    unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'anaerobic',   label: 'ANAEROBIC',    help: '1 = one sprint and done · 5 = handle repeated sprints · 10 = elite intervals',  unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'maxStrength', label: 'MAX STRENGTH', help: '1 = struggle with bodyweight · 5 = gym-regular · 10 = competitive powerlifter', unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'power',       label: 'POWER',        help: '1 = minimal explosiveness · 5 = decent jump · 10 = elite sprint power',         unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'speed',       label: 'SPEED',        help: '1 = slow jogger · 5 = faster than most · 10 = sub-11s 100m',                    unit: '/10', min: 1, max: 10, step: 1, default: 5 },
     ],
   },
   {
     id: 'skill',
     eyebrow: 'SKILL',
     question: 'Your athletic skills.',
-    help: 'Honest estimates: the model handles all levels.',
+    help: 'Honest estimates — the model handles all levels.',
     type: 'multi-slider',
     compact: true,
+    cat: 'skill',
     sliders: [
-      { id: 'coordination', label: 'COORDINATION', help: '1 = two left feet · 5 = hold your own · 10 = ball sports feel effortless',    unit: '/10', min: 1, max: 10, step: 1, default: 5 },
-      { id: 'flexibility',  label: 'FLEXIBILITY',  help: '1 = can\'t reach shins · 5 = touch toes · 10 = splits / gymnastics level',    unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'coordination', label: 'COORDINATION', help: '1 = two left feet · 5 = hold your own · 10 = ball sports feel effortless',      unit: '/10', min: 1, max: 10, step: 1, default: 5 },
+      { id: 'flexibility',  label: 'FLEXIBILITY',  help: "1 = can't reach shins · 5 = touch toes · 10 = splits level",                   unit: '/10', min: 1, max: 10, step: 1, default: 5 },
       { id: 'reaction',     label: 'REACTION',     help: '1 = always last to react · 5 = decent in fast games · 10 = catch things mid-air', unit: '/10', min: 1, max: 10, step: 1, default: 5 },
     ],
   },
   {
     id: 'sportsEnjoyed',
     eyebrow: 'HISTORY',
-    question: 'Sports you\'ve genuinely enjoyed?',
-    help: 'Pick as many as apply. Skip if none. Boosts recommendations in similar categories.',
+    question: 'Sports background.',
+    help: 'What have you genuinely enjoyed? Skip if none.',
     type: 'multi-select',
+    cat: 'history',
+    subQuestion: {
+      id: 'experience',
+      label: "LONGEST YOU'VE COMPETED SERIOUSLY?",
+      options: [
+        { label: 'Never', value: 'none' },
+        { label: '<2 years', value: 'short' },
+        { label: '2–5 years', value: 'medium' },
+        { label: '5+ years', value: 'long' },
+      ],
+    },
     options: [
       { label: 'Team field (GAA, soccer, rugby, hockey)', value: 'team_field' },
       { label: 'Team court (basketball, volleyball, netball)', value: 'team_court' },
@@ -3079,90 +3227,79 @@ const questions = [
     ],
   },
   {
-    id: 'experience',
-    eyebrow: 'EXPERIENCE',
-    question: 'Longest you\'ve competed seriously?',
-    help: 'In any one sport, at any level above casual play.',
-    type: 'choice',
-    options: [
-      { label: 'Never competed', value: 'none' },
-      { label: 'Under 2 years', value: 'short' },
-      { label: '2 to 5 years', value: 'medium' },
-      { label: 'Over 5 years', value: 'long' },
+    id: 'preferences',
+    eyebrow: 'PREFERENCES',
+    question: 'Your style.',
+    help: 'Pick one per row.',
+    type: 'compound-choice',
+    cat: 'preferences',
+    parts: [
+      {
+        id: 'teamSolo',
+        label: 'TEAM OR SOLO?',
+        options: [
+          { label: 'Team', value: 'Team' },
+          { label: 'Solo', value: 'Solo' },
+          { label: 'Either', value: 'Either' },
+        ],
+      },
+      {
+        id: 'outdoor',
+        label: 'OUTDOORS?',
+        options: [
+          { label: 'Essential', value: 'essential' },
+          { label: 'Nice to have', value: 'nice' },
+          { label: 'No preference', value: 'neutral' },
+          { label: 'Prefer indoor', value: 'indoor' },
+        ],
+      },
+      {
+        id: 'contact',
+        label: 'MAX CONTACT?',
+        options: [
+          { label: 'None', value: 'None' },
+          { label: 'Light', value: 'Light' },
+          { label: 'Medium', value: 'Medium' },
+          { label: 'Heavy', value: 'Heavy' },
+        ],
+      },
+      {
+        id: 'water',
+        label: 'COMFORTABLE IN WATER?',
+        options: [
+          { label: 'Yes', value: 'Yes' },
+          { label: 'No', value: 'No' },
+        ],
+      },
     ],
   },
   {
-    id: 'teamSolo',
-    eyebrow: 'STYLE',
-    question: 'Team or solo?',
-    help: 'Some thrive in a team. Some need to be alone with the work.',
-    type: 'choice',
-    options: [
-      { label: 'Team', value: 'Team' },
-      { label: 'Solo', value: 'Solo' },
-      { label: 'Either', value: 'Either' },
-    ],
-  },
-  {
-    id: 'outdoor',
-    eyebrow: 'ENVIRONMENT',
-    question: 'How important is being outdoors?',
-    help: 'Drives whether outdoor sports get a big boost or just a small one.',
-    type: 'choice',
-    options: [
-      { label: 'Essential: must be outside', value: 'essential' },
-      { label: 'Nice to have', value: 'nice' },
-      { label: 'No strong preference', value: 'neutral' },
-      { label: 'Prefer indoor', value: 'indoor' },
-    ],
-  },
-  {
-    id: 'contact',
-    eyebrow: 'CONTACT',
-    question: 'Maximum contact you\'ll tolerate?',
-    help: 'How much physical contact you\'re happy with in a sport.',
-    type: 'choice',
-    options: [
-      { label: 'None: no contact at all', value: 'None' },
-      { label: 'Light: incidental only', value: 'Light' },
-      { label: 'Medium: like football or GAA', value: 'Medium' },
-      { label: 'Heavy: like rugby or American football', value: 'Heavy' },
-    ],
-  },
-  {
-    id: 'injury',
-    eyebrow: 'HEALTH',
-    question: 'Any current or recent injuries?',
-    help: 'High-contact and high-injury-risk sports are adjusted down if you\'re carrying something.',
-    type: 'choice',
-    options: [
-      { label: 'No injuries', value: 'none' },
-      { label: 'Minor (muscle strain / soreness)', value: 'minor' },
-      { label: 'Joint or ligament injury', value: 'joint' },
-      { label: 'Significant injury / post-surgery', value: 'significant' },
-    ],
-  },
-  {
-    id: 'water',
-    eyebrow: 'WATER',
-    question: 'Comfortable in water?',
-    help: 'If no, we\'ll exclude all water-based sports from your results.',
-    type: 'choice',
-    options: [
-      { label: 'Yes', value: 'Yes' },
-      { label: 'No', value: 'No' },
-    ],
-  },
-  {
-    id: 'budget',
-    eyebrow: 'BUDGET',
-    question: 'Equipment budget to start?',
-    help: 'Guides recommendations toward accessible vs specialised sports.',
-    type: 'choice',
-    options: [
-      { label: 'Low (<\u20ac200)', value: 'Low' },
-      { label: 'Medium (\u20ac200\u20131000)', value: 'Medium' },
-      { label: 'High (>\u20ac1000)', value: 'High' },
+    id: 'practicalities',
+    eyebrow: 'PRACTICALITIES',
+    question: 'Health and budget.',
+    help: 'Used to filter out unsuitable sports.',
+    type: 'compound-choice',
+    cat: 'practicalities',
+    parts: [
+      {
+        id: 'injury',
+        label: 'CURRENT INJURIES?',
+        options: [
+          { label: 'None', value: 'none' },
+          { label: 'Minor', value: 'minor' },
+          { label: 'Joint / ligament', value: 'joint' },
+          { label: 'Significant', value: 'significant' },
+        ],
+      },
+      {
+        id: 'budget',
+        label: 'EQUIPMENT BUDGET?',
+        options: [
+          { label: '<€200', value: 'Low' },
+          { label: '€200–1k', value: 'Medium' },
+          { label: '>€1k', value: 'High' },
+        ],
+      },
     ],
   },
   {
@@ -3171,6 +3308,7 @@ const questions = [
     question: 'Where are you based?',
     help: 'Adjusts accessibility scores for your region. Tap Skip to skip.',
     type: 'country-input',
+    cat: 'location',
   },
 ];
 
@@ -3436,8 +3574,11 @@ function renderQuestion() {
 
   const card = document.createElement('div');
   card.className = 'q-card';
+  if (q.cat) card.dataset.cat = q.cat;
 
-  let bodyHtml = '<p class="eyebrow">' + q.eyebrow + '</p>' +
+  const wmNum = String(idx + 1).padStart(2, '0');
+  let bodyHtml = '<div class="q-card-wm" aria-hidden="true">' + wmNum + '</div>' +
+                 '<p class="eyebrow">' + q.eyebrow + '</p>' +
                  '<h2 class="question">' + q.question + '</h2>' +
                  '<p class="help">' + q.help + '</p>';
 
@@ -3516,28 +3657,85 @@ function renderQuestion() {
         '</button>';
     });
     bodyHtml += '</div>';
+    if (q.subQuestion) {
+      const sq = q.subQuestion;
+      const savedSq = state.answers[sq.id] || null;
+      bodyHtml += '<div class="sub-question">';
+      bodyHtml += '<div class="sub-question-label">' + sq.label + '</div>';
+      bodyHtml += '<div class="sub-opts">';
+      sq.options.forEach(function(o) {
+        const isSel = savedSq === o.value;
+        bodyHtml +=
+          '<button class="sub-opt' + (isSel ? ' selected' : '') + '" onclick="selectSubAnswer(\'' + sq.id + '\',\'' + o.value + '\')" data-sqid="' + sq.id + '" data-val="' + o.value + '">' +
+            o.label +
+          '</button>';
+      });
+      bodyHtml += '</div></div>';
+    }
     const nSel = state.answers[q.id].length;
     const btnLabel = nSel === 0 ? 'SKIP — NONE APPLY' : 'CONFIRM (' + nSel + ' SELECTED)';
     bodyHtml += '<button id="multi-confirm-btn" class="btn' + (nSel === 0 ? ' ghost' : '') + '" style="margin-top: 16px;" onclick="confirmAnswer()">' + btnLabel + '</button>';
 
   } else if (q.type === 'compound-choice') {
-    // Multiple sub-questions on one card
     bodyHtml += '<div class="compound">';
     q.parts.forEach(function(part) {
       bodyHtml += '<div class="compound-part">';
       bodyHtml += '<p class="compound-label">' + part.label + '</p>';
-      bodyHtml += '<div class="options compound-options">';
+      bodyHtml += '<div class="pref-seg">';
       part.options.forEach(function(o) {
         const isSel = state.answers[part.id] === o.value;
         bodyHtml +=
-          '<button class="option compound-option' + (isSel ? ' selected' : '') + '" onclick="selectCompound(\'' + part.id + '\',\'' + o.value + '\')" data-partid="' + part.id + '" data-val="' + o.value + '">' +
-            '<span>' + o.label + '</span>' +
+          '<button class="pref-seg-btn' + (isSel ? ' selected' : '') + '" onclick="selectCompound(\'' + part.id + '\',\'' + o.value + '\')" data-partid="' + part.id + '" data-val="' + o.value + '">' +
+            o.label +
           '</button>';
       });
       bodyHtml += '</div></div>';
     });
     bodyHtml += '</div>';
-    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM &amp; SEE YOUR DECK</button>';
+    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM</button>';
+
+  } else if (q.type === 'sex-body') {
+    const savedSex = state.answers.sex || 'M';
+    state.answers.sex = savedSex;
+    bodyHtml +=
+      '<div class="sex-toggle">' +
+        '<button class="sex-btn' + (savedSex === 'M' ? ' selected' : '') + '" onclick="selectSexToggle(\'M\')">MALE</button>' +
+        '<button class="sex-btn' + (savedSex === 'F' ? ' selected' : '') + '" onclick="selectSexToggle(\'F\')">FEMALE</button>' +
+      '</div>';
+    bodyHtml += '<div class="multi-slider compact">';
+    q.sliders.forEach(function(s) {
+      const initial = state.answers[s.id] != null ? state.answers[s.id] : s.default;
+      state.answers[s.id] = initial;
+      bodyHtml +=
+        '<div class="multi-slider-row">' +
+          '<div class="multi-slider-head">' +
+            '<span class="multi-slider-label">' + s.label + '</span>' +
+            '<span class="multi-slider-value" id="ms-val-' + s.id + '">' + initial + ' <em>' + s.unit + '</em></span>' +
+          '</div>' +
+          '<div class="slider-stepper">' +
+            '<button class="stepper-btn" onclick="stepMultiSlider(\'' + s.id + '\',-1)" aria-label="Decrease ' + s.label + '">−</button>' +
+            '<input type="range" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '" value="' + initial +
+              '" data-msid="' + s.id + '" class="multi-slider-input" aria-label="' + s.label + '">' +
+            '<button class="stepper-btn" onclick="stepMultiSlider(\'' + s.id + '\',1)" aria-label="Increase ' + s.label + '">+</button>' +
+          '</div>' +
+        '</div>';
+    });
+    bodyHtml += '</div>';
+    bodyHtml += '<button class="btn" style="margin-top: 16px;" onclick="confirmAnswer()">CONFIRM</button>';
+
+  } else if (q.type === 'body-type') {
+    const savedBT = state.answers.bodyType;
+    bodyHtml += '<div class="body-type-grid">';
+    q.options.forEach(function(o) {
+      const isSel = savedBT === o.value;
+      bodyHtml +=
+        '<button class="body-type-opt' + (isSel ? ' selected' : '') + '" onclick="selectBodyType(\'' + o.value + '\')" data-val="' + o.value + '">' +
+          '<span class="bt-label">' + o.label + '</span>' +
+          '<span class="bt-desc">' + o.desc + '</span>' +
+        '</button>';
+    });
+    bodyHtml += '</div>';
+
   } else if (q.type === 'country-input') {
     const countryList = ['Afghanistan','Albania','Algeria','Andorra','Angola','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahrain','Bangladesh','Belgium','Bolivia','Bosnia and Herzegovina','Brazil','Bulgaria','Cambodia','Cameroon','Canada','Chile','China','Colombia','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic','Denmark','Ecuador','Egypt','El Salvador','Estonia','Ethiopia','Finland','France','Georgia','Germany','Ghana','Greece','Guatemala','Hong Kong','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kosovo','Kuwait','Kyrgyzstan','Latvia','Lebanon','Libya','Lithuania','Luxembourg','Malaysia','Malta','Mexico','Moldova','Mongolia','Montenegro','Morocco','Mozambique','Myanmar','Netherlands','New Zealand','Nigeria','North Macedonia','Norway','Pakistan','Panama','Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russia','Rwanda','Saudi Arabia','Senegal','Serbia','Singapore','Slovakia','Slovenia','South Africa','South Korea','Spain','Sri Lanka','Sweden','Switzerland','Taiwan','Tanzania','Thailand','Trinidad and Tobago','Tunisia','Turkey','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Venezuela','Vietnam','Zimbabwe'];
     const saved = state.answers.country || '';
@@ -3613,7 +3811,7 @@ function renderQuestion() {
           if (!warn) {
             warn = document.createElement('p');
             warn.className = 'bmi-warning';
-            card.querySelector('.q-body').appendChild(warn);
+            card.appendChild(warn);
           }
           warn.textContent = '⚠ BMI ' + bmi.toFixed(1) + ' — double-check your numbers?';
         } else if (warn) {
@@ -3703,8 +3901,7 @@ function selectCompound(partId, value) {
   state.answers[partId] = value;
   const card = document.querySelector('.q-card');
   if (!card) return;
-  // Highlight selected option within this part only
-  card.querySelectorAll('.compound-option[data-partid="' + partId + '"]').forEach(function(b) {
+  card.querySelectorAll('.pref-seg-btn[data-partid="' + partId + '"]').forEach(function(b) {
     b.classList.toggle('selected', b.dataset.val === value);
   });
 }
@@ -3734,6 +3931,37 @@ function confirmAnswer() {
   }, 300);
 }
 
+function selectSexToggle(sex) {
+  state.answers.sex = sex;
+  const card = document.querySelector('.q-card');
+  if (!card) return;
+  card.querySelectorAll('.sex-btn').forEach(function(b) {
+    b.classList.toggle('selected', b.textContent.trim() === (sex === 'M' ? 'MALE' : 'FEMALE'));
+  });
+}
+
+function selectBodyType(value) {
+  state.answers.bodyType = value;
+  const sex = state.answers.sex || 'M';
+  state.answers.bodyFat = BODY_TYPE_BF[sex][value];
+  const card = document.querySelector('.q-card');
+  if (card) {
+    card.querySelectorAll('.body-type-opt').forEach(function(b) {
+      b.classList.toggle('selected', b.dataset.val === value);
+    });
+  }
+  setTimeout(function() { confirmAnswer(); }, 200);
+}
+
+function selectSubAnswer(id, value) {
+  state.answers[id] = value;
+  const card = document.querySelector('.q-card');
+  if (!card) return;
+  card.querySelectorAll('.sub-opt[data-sqid="' + id + '"]').forEach(function(b) {
+    b.classList.toggle('selected', b.dataset.val === value);
+  });
+}
+
 function previousQuestion() {
   if (state.questionIndex === 0) return;
   const card = document.querySelector('.q-card');
@@ -3756,7 +3984,7 @@ function enableScroll(card) {
 
   function onStart(e) {
     // Don't start a drag on inputs/buttons — they need their own touch behaviour
-    if (e.target.closest('button, input, .scale-chip, .multi-option, .compound-option')) return;
+    if (e.target.closest('button, input, .scale-chip, .multi-option, .compound-option, .pref-seg-btn')) return;
     // Only start a back-drag when the card is scrolled to the top; otherwise let native scroll handle it
     if (card.scrollTop > 2) return;
     dragging = true;
