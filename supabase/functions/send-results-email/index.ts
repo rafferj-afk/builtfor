@@ -20,7 +20,7 @@ Deno.serve(async (req: Request) => {
 
     const html = buildEmail(topResults, totalAnalysed ?? topResults.length);
     const topSport = topResults[0]?.sport ?? "your top match";
-    const from = Deno.env.get("SENDER_EMAIL") ?? "BUILTFOR <onboarding@resend.dev>";
+    const from = Deno.env.get("SENDER_EMAIL") ?? "BUILTFOR <contact@builtfor.fit>";
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
