@@ -1,4 +1,0 @@
-[[redirects]]
-  from = "/*"
-  to   = "/builtfor.html"
-  status = 200
