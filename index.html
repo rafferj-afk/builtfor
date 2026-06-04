@@ -4365,7 +4365,7 @@ function renderTab(tab) {
         <input type="email" id="unlock-email" class="unlock-input" placeholder="your@email.com" autocomplete="email">
         <label class="unlock-consent">
           <input type="checkbox" id="unlock-consent" onchange="document.getElementById('unlock-btn').disabled=!this.checked">
-          I agree to my answers and email being stored to send my results. See <a href="./privacy.html" target="_blank">Privacy</a>.
+          <span>I agree to my answers and email being stored to send my results. See <a href="./privacy.html" target="_blank">Privacy</a>.</span>
         </label>
         <button id="unlock-btn" class="btn" onclick="handleUnlockSubmit()" disabled>SEE ALL ${hiddenCount} MATCHES →</button>
       </div>`;
