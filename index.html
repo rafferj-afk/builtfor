@@ -338,6 +338,7 @@ body::before {
   padding: 18px 20px 20px;
   position: relative;
   z-index: 2;
+  transition: opacity 0.3s ease;
 }
 
 .welcome-card-head {
@@ -395,7 +396,7 @@ body::before {
 
 .welcome-card-sport {
   font-family: 'Anton', sans-serif;
-  font-size: 42px;
+  font-size: clamp(24px, 8vw, 42px);
   line-height: 1;
   text-transform: uppercase;
   color: var(--text);
@@ -408,6 +409,9 @@ body::before {
   color: var(--text-dim);
   letter-spacing: 0.06em;
   margin-bottom: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .welcome-demands { display: grid; gap: 7px; }
@@ -495,7 +499,8 @@ body::before {
 .welcome-stats {
   display: flex;
   justify-content: center;
-  gap: 18px;
+  align-items: center;
+  gap: 0;
   margin-bottom: 11px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
@@ -503,7 +508,11 @@ body::before {
   letter-spacing: 0.1em;
   animation: wFadeUp 0.65s ease 0.5s both;
 }
-
+.welcome-stats span {
+  padding: 0 14px;
+  border-left: 1px solid rgba(255,255,255,0.1);
+}
+.welcome-stats span:first-child { border-left: none; padding-left: 0; }
 .welcome-stats .dot-lime   { color: var(--accent); }
 .welcome-stats .dot-cobalt { color: #93c5fd; }
 
@@ -2495,10 +2504,10 @@ input[type="range"]::-moz-range-thumb {
     <p class="welcome-eyebrow">2 MINUTES · 75 SPORTS</p>
 
     <div class="welcome-headline">
-      YOUR BODY WAS BUILT FOR <span class="welcome-slot-wrap"><span class="welcome-slot" id="welcome-slot">SWIMMING</span></span>.
+      YOUR BODY WAS BUILT FOR <span class="welcome-slot-wrap"><span class="welcome-slot" id="welcome-slot">SWIMMING.</span></span>
     </div>
 
-    <p class="welcome-sub">Peer-reviewed anthropometrics. A proprietary dual-axis algorithm. 103 published studies, meticulously validated.</p>
+    <p class="welcome-sub">Peer-reviewed anthropometrics. A proprietary dual-axis algorithm. 103 published studies.</p>
 
     <!-- Floating result card — teaser of the payoff -->
     <div class="welcome-card-area">
@@ -5332,42 +5341,114 @@ function finishEdit() {
   runScoring();
 }
 
-/* ── Welcome screen slot machine ── */
-(function initWelcomeSlot() {
-  const SLOT_SPORTS = [
-    'SWIMMING', 'JAVELIN', 'JUDO', 'ROWING', 'HURLING',
-    'CLIMBING', 'FENCING', 'SHOT PUT', 'TRIATHLON',
-    'ROAD CYCLING', 'RUGBY UNION', 'GYMNASTICS',
+/* ── Welcome screen: synced slot + card ── */
+(function initWelcome() {
+  var SHOWCASE = [
+    { name: 'SWIMMING',     id: 'SP05', pos: 'Pool Freestyle'   },
+    { name: 'JAVELIN',      id: 'SP44', pos: 'Senior Elite'     },
+    { name: 'JUDO',         id: 'SP15', pos: 'Senior Elite'     },
+    { name: 'ROWING',       id: 'SP08', pos: 'Heavyweight'      },
+    { name: 'HURLING',      id: 'SP36c',pos: 'Midfield'         },
+    { name: 'CLIMBING',     id: 'SP12', pos: 'Lead / Bouldering'},
+    { name: 'SPRINTING',    id: 'SP11', pos: '100m'             },
+    { name: 'SHOT PUT',     id: 'SP46', pos: 'Senior Elite'     },
+    { name: 'TRIATHLON',    id: 'SP51', pos: 'Olympic Distance' },
+    { name: 'ROAD CYCLING', id: 'SP04', pos: 'Grand Tour'       },
+    { name: 'RUGBY UNION',  id: 'SP06', pos: 'Forwards'         },
+    { name: 'GYMNASTICS',   id: 'SP73', pos: 'Senior Elite'     },
   ];
-  let idx = 0;
-  const el = document.getElementById('welcome-slot');
-  if (!el) return;
-  setInterval(function() {
-    el.classList.add('slot-exit');
-    setTimeout(function() {
-      idx = (idx + 1) % SLOT_SPORTS.length;
-      el.textContent = SLOT_SPORTS[idx];
-      el.classList.remove('slot-exit');
-      void el.offsetWidth;
-      el.classList.add('slot-enter');
-      setTimeout(function() { el.classList.remove('slot-enter'); }, 320);
-    }, 320);
-  }, 2400);
-})();
 
-/* ── Welcome score count-up ── */
-(function initWelcomeScore() {
-  const el = document.getElementById('welcome-score');
-  if (!el) return;
-  const target = 87, ms = 900, delay = 1000;
+  var DEMAND_LABELS = {
+    aerobic:'AEROBIC', anaerobic:'ANAEROBIC', maxStrength:'STRENGTH',
+    power:'POWER', speed:'SPEED', endurance:'ENDURANCE',
+    flexibility:'FLEXIBILITY', coordination:'COORDINATION', reaction:'REACTION'
+  };
+
+  var slotEl  = document.getElementById('welcome-slot');
+  var scoreEl = document.getElementById('welcome-score');
+  if (!slotEl) return;
+
+  // Resolve sport data for each entry
+  var entries = (typeof SPORTS_DATA !== 'undefined')
+    ? SHOWCASE.map(function(e) {
+        return { name: e.name, pos: e.pos, sport: SPORTS_DATA.find(function(s) { return s.id === e.id; }) };
+      })
+    : SHOWCASE.map(function(e) { return { name: e.name, pos: e.pos, sport: null }; });
+
+  var idx = 0;
+
+  // Initial score count-up
+  var target = 87, ms = 900, delay = 1000;
   setTimeout(function() {
-    const t0 = performance.now();
+    var t0 = performance.now();
     (function tick() {
-      const p = Math.min((performance.now() - t0) / ms, 1);
-      el.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target);
+      var p = Math.min((performance.now() - t0) / ms, 1);
+      if (scoreEl) scoreEl.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target);
       if (p < 1) requestAnimationFrame(tick);
     })();
   }, delay);
+
+  function applyCard(entry) {
+    var sport = entry.sport;
+    if (!sport) return;
+    var inner = document.querySelector('.welcome-card-inner');
+    if (!inner) return;
+
+    var catEl   = inner.querySelector('.welcome-card-cat');
+    var nameEl  = inner.querySelector('.welcome-card-sport');
+    var posEl   = inner.querySelector('.welcome-card-pos');
+    var rows    = inner.querySelectorAll('.welcome-demand-row');
+
+    if (catEl)  catEl.textContent  = sport.category.toUpperCase();
+    if (nameEl) nameEl.textContent = sport.sport.toUpperCase();
+    if (posEl)  posEl.textContent  = entry.pos;
+
+    var top4 = Object.entries(sport.demands)
+      .sort(function(a, b) { return b[1] - a[1]; })
+      .slice(0, 4);
+
+    var score = Math.round(top4.reduce(function(s, kv) { return s + kv[1]; }, 0) / top4.length * 10);
+    if (scoreEl) scoreEl.textContent = score;
+
+    rows.forEach(function(row, i) {
+      if (!top4[i]) return;
+      var key = top4[i][0], val = top4[i][1];
+      var lbl  = row.querySelector('.welcome-demand-label');
+      var bar  = row.querySelector('.welcome-demand-bar');
+      var valEl= row.querySelector('.welcome-demand-val');
+      if (lbl)  lbl.textContent  = DEMAND_LABELS[key] || key.toUpperCase();
+      if (bar)  bar.style.width  = (val * 10) + '%';
+      if (valEl) valEl.textContent = val + '/10';
+    });
+  }
+
+  function advance() {
+    // Slot exit
+    slotEl.classList.add('slot-exit');
+    var inner = document.querySelector('.welcome-card-inner');
+    if (inner) inner.style.opacity = '0';
+
+    setTimeout(function() {
+      idx = (idx + 1) % entries.length;
+      var entry = entries[idx];
+
+      // Update slot text
+      slotEl.textContent = entry.name + '.';
+      slotEl.classList.remove('slot-exit');
+      void slotEl.offsetWidth;
+      slotEl.classList.add('slot-enter');
+      setTimeout(function() { slotEl.classList.remove('slot-enter'); }, 320);
+
+      // Update card
+      applyCard(entry);
+      if (inner) inner.style.opacity = '1';
+    }, 320);
+  }
+
+  // Apply first card after score count-up
+  setTimeout(function() { applyCard(entries[0]); }, 2000);
+
+  setInterval(advance, 4000);
 })();
 
 /* ============================================================
