@@ -338,7 +338,7 @@ body::before {
   padding: 18px 20px 20px;
   position: relative;
   z-index: 2;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.32s ease;
 }
 
 .welcome-card-head {
@@ -5432,16 +5432,21 @@ function finishEdit() {
       idx = (idx + 1) % entries.length;
       var entry = entries[idx];
 
-      // Update slot text
+      // Update content while both are invisible
       slotEl.textContent = entry.name + '.';
+      applyCard(entry);
+
+      // Snap slot to bottom start position (no transition)
       slotEl.classList.remove('slot-exit');
       void slotEl.offsetWidth;
       slotEl.classList.add('slot-enter');
-      setTimeout(function() { slotEl.classList.remove('slot-enter'); }, 320);
+      void slotEl.offsetWidth;
 
-      // Update card
-      applyCard(entry);
-      if (inner) inner.style.opacity = '1';
+      // Start both animations in the same frame so they finish together
+      requestAnimationFrame(function() {
+        slotEl.classList.remove('slot-enter');
+        if (inner) inner.style.opacity = '1';
+      });
     }, 320);
   }
 
